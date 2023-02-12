@@ -103,3 +103,5 @@ venv/
 # specific
 data/
 .cache*
+lists.py
+config.toml
