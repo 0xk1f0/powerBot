@@ -7,7 +7,7 @@ INIT_HR=$(date +%H)
 IS_RUNNING=false
 
 # if we find process
-if pgrep -x bot.py >> /dev/null; then
+if pgrep -x runbot.py >> /dev/null; then
     # assume running
     IS_RUNNING=true;
 else
@@ -21,10 +21,10 @@ if [ "$1" == "daily" ]; then
     # if bot is not running
     if $IS_RUNNING; then
         echo "Killing.."
-        killall bot.py
+        killall runbot.py
     fi
     echo "Starting with 'daily'.."
-    ./bot.py daily &
+    ./runbot.py daily &
     disown
 # else start normally
 else
@@ -33,7 +33,7 @@ else
         echo "Not doing anything!"
     else
         echo "Starting.."
-        ./bot.py &
+        ./runbot.py &
         disown
     fi
 fi

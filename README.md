@@ -12,7 +12,7 @@ Don't forget to edit and rename the example files `config.toml` and `lists.py` a
 git clone https://github.com/0xk1f0/powerBot
 cd powerBot/
 python -m venv env
-./main.py
+./runbot.py
 ```
 
 ### Obtaining the API Keys
