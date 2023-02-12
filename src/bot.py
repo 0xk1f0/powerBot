@@ -144,3 +144,7 @@ async def shoot(ctx, id=""):
 @bot.command(name="version")
 async def version(ctx):
     await ctx.send(f'```Current Version: "{VERSION}" - "{VERSION_CODENAME}"```')
+
+@bot.command(name="source")
+async def source(ctx):
+    await ctx.send(f"*On GitHub at https://github.com/0xk1f0/powerBot :)*")
