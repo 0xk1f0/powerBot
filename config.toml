@@ -1,0 +1,26 @@
+[general]
+reddit_top_usage = "/top <subreddit> <['all', 'day', 'hour', 'month', 'week', 'year']> <count>"
+spotify_archive_usage = "/archive <url> <username>"
+shoot_usage = "/shoot <user>"
+hug_usage = "/hug <user>"
+err = ""
+status = ""
+
+[spotify]
+client_id = ""
+client_secret = ""
+
+[discord]
+bot_token = ""
+daily_channel = ""
+daily_count = ""
+daily_sub = ""
+
+[reddit]
+client_id = ""
+client_secret = ""
+user_agent = ""
+
+[version]
+tag = "0.0.6"
+codename = "banshee"
