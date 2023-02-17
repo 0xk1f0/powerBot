@@ -11,13 +11,10 @@ config = toml.load("config.toml")
 ID = config["spotify"]["client_id"]
 SECRET = config["spotify"]["client_secret"]
 
-def save_as_json(fetched_playlist, submitter_name):
-    # Extract the playlist name and owner from the JSON object
-    playlist_name = fetched_playlist["name"]
-    playlist_owner = fetched_playlist["owner"]["display_name"]
-    # Extract the list of tracks from the playlist information
-    tracks = fetched_playlist["tracks"]["items"]
-
+def save_as_json(fetched_name, fetched_owner, fetched_tracks, submitter_name):
+    playlist_name = fetched_name
+    playlist_owner = fetched_owner
+    tracks = fetched_tracks
     songs = []
 
     for track in tracks:
@@ -31,7 +28,9 @@ def save_as_json(fetched_playlist, submitter_name):
     json_obj = {
         "name": f"{playlist_name}",
         "owner": f"{playlist_owner}",
-        "for": f"{submitter_name}",
+        "ref": f"{submitter_name}",
+        "time": f"{datetime.datetime.now()}",
+        "count": f"{len(songs)}",
         "songs": songs
     }
 
@@ -40,12 +39,10 @@ def save_as_json(fetched_playlist, submitter_name):
         # Write to file
         json.dump(json_obj, f, indent=4)
 
-def save_as_txt(fetched_playlist, submitter_name):
-    # Extract the playlist name and owner from the JSON object
-    playlist_name = fetched_playlist["name"]
-    playlist_owner = fetched_playlist["owner"]["display_name"]
-    # Extract the list of tracks from the playlist information
-    tracks = fetched_playlist["tracks"]["items"]
+def save_as_txt(fetched_name, fetched_owner, fetched_tracks, submitter_name):
+    playlist_name = fetched_name
+    playlist_owner = fetched_owner
+    tracks = fetched_tracks
     # Extract the URLs from the items
     urls = [track["track"]["external_urls"]["spotify"] for track in tracks]
 
@@ -70,7 +67,8 @@ def save_as_txt(fetched_playlist, submitter_name):
         # Write the playlist name and owner at the top of the file
         f.write("Name: " + playlist_name + "\n")
         f.write("Owner: " + playlist_owner + "\n")
-        f.write("For: " + submitter_name + "\n")
+        f.write("Ref: " + submitter_name + "\n")
+        f.write("Count: " + str(len(urls)) + "\n")
 
         # Write the current date and time at the top of the file
         f.write("Generated on: " + str(datetime.datetime.now()) + "\n")
@@ -98,7 +96,7 @@ def save_as_txt(fetched_playlist, submitter_name):
         # Write last separator line to the file
         f.write(header + "\n")
 
-def perform_archive(url, format, add_name):
+async def perform_archive(url, format, add_name):
     # Obtain an access token and refresh token using the prompt_for_user_token function
     token = spotipy.util.prompt_for_user_token(
         "cosmic",
@@ -114,14 +112,24 @@ def perform_archive(url, format, add_name):
     try:
         # Create a Spotify object using the access token
         spotify = spotipy.Spotify(auth=token)
-        # Retrieve the playlist information using the playlist() method
-        playlist = spotify.playlist(playlist_id)
+        # Retrieve the playlist information using the playlist() and next() method
+        results = spotify.playlist(playlist_id)
+        pl_name = results["name"]
+        pl_owner = results["owner"]["display_name"]
+        results = results["tracks"]
+        songs = results["items"]
+        has_next = results['next']
+        while has_next != None:
+            results = spotify.next(results)
+            songs.extend(results["items"])
+            has_next = results['next']
     except:
         return False
 
+    # process the result to file
     if format == "json":
-        save_as_json(playlist, add_name)
+        save_as_json(pl_name, pl_owner, songs, add_name)
     elif format == "txt":
-        save_as_txt(playlist, add_name)
+        save_as_txt(pl_name, pl_owner, songs, add_name)
     else:
         return False

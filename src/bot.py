@@ -77,21 +77,22 @@ async def on_message(message):
 @bot.tree.command(name="archive", description=SPOTIFY_ARCHIVE_USAGE)
 @app_commands.describe(url = "URL of playlist to archive")
 @app_commands.describe(format = "One of: 'json', 'txt'")
-@app_commands.describe(name = "Included in the output file")
-async def archive(ctx: discord.Interaction, url: str, format: str, name: str):
+@app_commands.describe(reference = "Included in the output file")
+async def archive(ctx: discord.Interaction, url: str, format: str, reference: str):
     if is_valid_url(url) != True:
         await ctx.response.send_message(f'"{url}" does not seem to be a valid URL!')
     elif format not in ["json", "txt"]:
         await ctx.response.send_message(f'"{format}" is unknown or unsupported!')
     else:
         id = url.split("/")[-1]
-        result = perform_archive(id, format, name)
+        await ctx.response.send_message(f"Archiving that for you..")
+        result = await perform_archive(id, format, reference)
         if result != False:
             with open(os.path.join(f"{os.getcwd()}/data", f"playlist.{format}"), 'rb') as f:
-                playlist_file = discord.File(f, filename=f"playlist_{name}_{uuid.uuid4()}.{format}")
-                await ctx.response.send_message(f"Archived for you as .{format}! ^w^", file=playlist_file)
+                playlist_file = discord.File(f, filename=f"playlist_{reference}_{uuid.uuid4()}.{format}")
+                await ctx.channel.send(f"Archived for you as .{format}! ^w^", file=playlist_file)
         else:
-            await ctx.response.send_message(f"{ERR}")
+            await ctx.channel.send(f"{ERR}")
 
 @bot.tree.command(name="top", description=REDDIT_TOP_USAGE)
 @app_commands.describe(subreddit = "Target Subreddit")
