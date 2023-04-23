@@ -1,14 +1,15 @@
 import os
-import sys
 import discord
+import toml
+import uuid
+import asyncio
 from discord.ext import commands
 from discord import app_commands
 from src.spotify import perform_archive
 from src.reddit import perform_fetch, ready_image, check_sub, TIMESPANS
 from src.helpers import is_valid_url, gifReact
 from src.lists import TRIGGERLIST
-import toml
-import uuid
+from datetime import datetime
 
 # Load the config.toml file
 config = toml.load("config.toml")
@@ -46,25 +47,31 @@ async def on_ready():
         print(e)
     # set presence
     await bot.change_presence(activity=discord.Game(STATUS))
-    # Check if the "daily" option was passed as an argument
-    if "daily" in sys.argv:
-        # Get a reference to the channel
-        channel = await bot.fetch_channel(DAILY_ID)
-        result = await perform_fetch(DAILY_SUB, DAILY_COUNT, "day")
-        if result != False and len(result) != 0:
-            await channel.send(f"Time for r/{DAILY_SUB} Daily Top {DAILY_COUNT}!")
-            for image in result:
-                # ALWAYS SEND DAILY WITH SPOILER
-                final = await ready_image(image, True)
-                if final != False:
-                    message = await channel.send(file=final)
-                    await message.add_reaction("👍")
-                    await message.add_reaction("🫳")
-                    await message.add_reaction("👎")
-                else:
-                    continue
-        else:
-            await channel.send(f"{ERR}")
+    # set daily task
+    bot.loop.create_task(daily_ticker())
+
+async def daily_ticker():
+    await bot.wait_until_ready()
+    channel = await bot.fetch_channel(DAILY_ID)
+    while not bot.is_closed():
+        now = datetime.now()
+        if now.hour == 12 and now.minute == 0:
+            result = await perform_fetch(DAILY_SUB, DAILY_COUNT, "day")
+            if result != False and len(result) != 0:
+                await channel.send(f"Time for r/{DAILY_SUB} Daily Top {DAILY_COUNT}!")
+                for image in result:
+                    # ALWAYS SEND DAILY WITH SPOILER
+                    final = await ready_image(image, True)
+                    if final != False:
+                        message = await channel.send(file=final)
+                        await message.add_reaction("👍")
+                        await message.add_reaction("🫳")
+                        await message.add_reaction("👎")
+                    else:
+                        continue
+            else:
+                await channel.send(f"{ERR}")
+        await asyncio.sleep(60)
 
 @bot.event
 async def on_message(message):
