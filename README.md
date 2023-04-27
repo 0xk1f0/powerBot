@@ -4,7 +4,7 @@ A do-it-all discord bot written in spaghetti python
 
 ## Usage
 
-> Don't forget to edit and rename the example files `config.toml` and `lists.py` accordingly
+> Don't forget to edit and rename the example `config.example` accordingly
 
 ### Manual
 

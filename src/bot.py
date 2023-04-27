@@ -6,12 +6,12 @@ from discord.ext import commands, tasks
 from discord import app_commands
 from src.spotify import perform_archive
 from src.reddit import perform_fetch, ready_image, check_sub, TIMESPANS
-from src.helpers import is_valid_url, gifReact
-from src.lists import TRIGGERLIST
+from src.helpers import is_valid_url
 from datetime import datetime
 
-# Load the config.toml file
+# Load the config.toml and version file
 config = toml.load("config.toml")
+version = toml.load("VERSION")
 
 # Extract discord parameters from the config file
 DAILY_ID = config["discord"]["daily_channel"]
@@ -21,12 +21,10 @@ DAILY_SUB = config["discord"]["daily_sub"]
 # Extract general stuff from the config file
 REDDIT_TOP_USAGE = config["general"]["reddit_top_usage"]
 SPOTIFY_ARCHIVE_USAGE = config["general"]["spotify_archive_usage"]
-SHOOT_USAGE = config["general"]["shoot_usage"]
-HUG_USAGE = config["general"]["hug_usage"]
+TRIGGERLIST = config["triggers"]["list"]
 ERR = config["general"]["err"]
-VERSION = config["version"]["tag"]
-VERSION_CODENAME = config["version"]["codename"]
 STATUS = config["general"]["status"]
+VERSION = version["tag"]
 
 # bot intents
 intents = discord.Intents.default()
@@ -51,9 +49,9 @@ async def on_ready():
 
 @tasks.loop(seconds=60)
 async def daily_ticker():
-    await bot.wait_until_ready()
     now = datetime.now()
-    if now.hour == 12 and now.minute == 0:
+    if now.hour == 12 and now.minute == 1:
+        await bot.wait_until_ready()
         channel = await bot.fetch_channel(DAILY_ID)
         result = await perform_fetch(DAILY_SUB, DAILY_COUNT, "day")
         if result != False and len(result) != 0:
@@ -127,30 +125,10 @@ async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: in
             else:
                 await ctx.channel.send(f"{ERR}")
 
-@bot.command(name="hug",description=HUG_USAGE)
-async def hug(ctx):
-    if not ctx.message.mentions:
-        await ctx.send(f"{ERR} try: {HUG_USAGE}")
-    else:
-        user = ctx.message.mentions[0]
-        gif = gifReact("hug")
-        await ctx.send(f"{user.mention} {gif}")
-
-@bot.command(name="shoot",description=SHOOT_USAGE)
-async def shoot(ctx, id=""):
-    if str(id) == "me":
-        await ctx.send(f"I wouldn't do that..")
-    elif not ctx.message.mentions:
-        await ctx.send(f"{ERR} try: {SHOOT_USAGE}")
-    else:
-        user = ctx.message.mentions[0]
-        gif = gifReact("shoot")
-        await ctx.send(f"{user.mention} {gif}")
-
-@bot.command(name="version")
+@bot.tree.command(name="version", description="Print Current Version")
 async def version(ctx):
-    await ctx.send(f'```Current Version: "{VERSION}" - "{VERSION_CODENAME}"```')
+    await ctx.response.send_message(f'```Current Version: "{VERSION}"```')
 
-@bot.command(name="source")
+@bot.tree.command(name="source", description="Print Source Code Link")
 async def source(ctx):
-    await ctx.send(f"*On GitHub at https://github.com/0xk1f0/powerBot :)*")
+    await ctx.response.send_message(f"*On GitHub at https://github.com/0xk1f0/powerBot :)*")

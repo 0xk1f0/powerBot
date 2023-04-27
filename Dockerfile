@@ -8,6 +8,7 @@ WORKDIR /app
 COPY requirements.txt .
 COPY config.toml .
 COPY runbot.py .
+COPY VERSION .
 # this is the spotify cache file
 COPY .cache* .
 
