@@ -1,18 +1,19 @@
 #!./env/bin/python3
 
-from src.bot import bot
+from main.bot import bot
 import toml
 
 # Load the config.toml and version file
-config = toml.load("config.toml")
-version = toml.load("VERSION")
+CONFIG = toml.load("./src/config/config.toml")
+VERSION = toml.load("VERSION")
 
 # Extract token from config
-TOKEN = config["discord"]["bot_token"]
+TOKEN = CONFIG["discord"]["bot_token"]
+TAG = VERSION["tag"]
 
 # Print hello message
 print(f"""
-Starting v{version["tag"]}...
+Starting v{TAG}...
 
                               ____        _   
  _ __   _____      _____ _ __| __ )  ___ | |_ 

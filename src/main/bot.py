@@ -2,29 +2,36 @@ import os
 import discord
 import toml
 import uuid
+import re
 from discord.ext import commands, tasks
 from discord import app_commands
-from src.spotify import perform_archive
-from src.reddit import perform_fetch, ready_image, check_sub, TIMESPANS
-from src.helpers import is_valid_url
+from main.spotify import perform_archive
+from main.reddit import perform_fetch, ready_image, check_sub, TIMESPANS
+from main.helpers import is_valid_url
 from datetime import datetime
 
 # Load the config.toml and version file
-config = toml.load("config.toml")
-version = toml.load("VERSION")
+CONFIG = toml.load("./src/config/config.toml")
+BLOCKLIST = toml.load("./src/config/blocklist.toml")
+VERSION = toml.load("VERSION")
 
 # Extract discord parameters from the config file
-DAILY_ID = config["discord"]["daily_channel"]
-DAILY_COUNT = int(config["discord"]["daily_count"])
-DAILY_SUB = config["discord"]["daily_sub"]
+DAILY_ID = CONFIG["discord"]["daily_channel"]
+DAILY_COUNT = int(CONFIG["discord"]["daily_count"])
+DAILY_SUB = CONFIG["discord"]["daily_sub"]
+
+# Extract blocking stuff
+BLOCKED_USERS = BLOCKLIST["blocked"]["users"]
 
 # Extract general stuff from the config file
-REDDIT_TOP_USAGE = config["general"]["reddit_top_usage"]
-SPOTIFY_ARCHIVE_USAGE = config["general"]["spotify_archive_usage"]
-TRIGGERLIST = config["triggers"]["list"]
-ERR = config["general"]["err"]
-STATUS = config["general"]["status"]
-VERSION = version["tag"]
+ADMINS = CONFIG["general"]["admins"]
+REDDIT_TOP_USAGE = CONFIG["general"]["reddit_top_usage"]
+SPOTIFY_ARCHIVE_USAGE = CONFIG["general"]["spotify_archive_usage"]
+TRIGGERLIST = CONFIG["triggers"]["list"]
+REDDIT_CAP = CONFIG["reddit"]["fetch_cap"]
+ERR = CONFIG["general"]["err"]
+STATUS = CONFIG["general"]["status"]
+TAG = VERSION["tag"]
 
 # bot intents
 intents = discord.Intents.default()
@@ -46,6 +53,8 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(STATUS))
     # set daily task
     daily_ticker.start()
+
+### TASKS ###
 
 @tasks.loop(seconds=60)
 async def daily_ticker():
@@ -69,6 +78,8 @@ async def daily_ticker():
         else:
             await channel.send(f"{ERR}")
 
+### EVENTS ###
+
 @bot.event
 async def on_message(message):
 	for word in TRIGGERLIST:
@@ -77,11 +88,16 @@ async def on_message(message):
 			return
 	await bot.process_commands(message)
 
+### MAIN ###
+
 @bot.tree.command(name="archive", description=SPOTIFY_ARCHIVE_USAGE)
 @app_commands.describe(url = "URL of playlist to archive")
 @app_commands.describe(format = "One of: 'json', 'txt'")
 @app_commands.describe(reference = "Included in the output file")
 async def archive(ctx: discord.Interaction, url: str, format: str, reference: str):
+    if ctx.user.id in BLOCKED_USERS:
+        await ctx.response.send_message(f'You are currently on the blocklist!')
+        return
     if is_valid_url(url) != True:
         await ctx.response.send_message(f'"{url}" does not seem to be a valid URL!')
     elif format not in ["json", "txt"]:
@@ -102,10 +118,13 @@ async def archive(ctx: discord.Interaction, url: str, format: str, reference: st
 @app_commands.describe(timespan = "Timespan of Posts")
 @app_commands.describe(count = "Image Count")
 async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: int):
+    if ctx.user.id in BLOCKED_USERS:
+        await ctx.response.send_message(f'You are currently on the blocklist!')
+        return
     if timespan not in TIMESPANS:
         await ctx.response.send_message(f"Invalid Timespan, try one of: 'all', 'day', 'hour', 'month', 'week', 'year'")
-    elif count > 25:
-        await ctx.response.send_message(f"Max Count is capped to 25 for now!")
+    elif count > int(REDDIT_CAP):
+        await ctx.response.send_message(f"Max Count is capped to {REDDIT_CAP}!")
     else:
         is_sub = await check_sub(subreddit)
         if is_sub == False:
@@ -125,9 +144,61 @@ async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: in
             else:
                 await ctx.channel.send(f"{ERR}")
 
+### BLOCKING ###
+
+@bot.tree.command(name="block", description="Block a user")
+@app_commands.describe(user = "Target User")
+async def block(ctx: discord.Interaction, user: str):
+    global BLOCKLIST
+    global BLOCKED_USERS
+
+    # check if user is admin
+    if not ctx.user.id in ADMINS:
+        await ctx.response.send_message(f'You are not an admin!')
+    else:
+        # convert to normal id
+        user_id = int(re.search(r'\d+', user).group())
+
+        # check if user is not blocked already -> block
+        if not user_id in BLOCKLIST["blocked"]["users"]:
+            BLOCKLIST["blocked"]["users"].append(user_id)
+        
+        # write back to list
+        with open('./src/config/blocklist.toml', 'w') as f:
+            toml.dump(BLOCKLIST, f)
+
+        # re-read config
+        BLOCKLIST = toml.load("./src/config/blocklist.toml")
+        BLOCKED_USERS = BLOCKLIST["blocked"]["users"]
+
+        await ctx.response.send_message(f'Added {user} to blocklist!')
+
+@bot.tree.command(name="unblock", description="Unblock a user")
+@app_commands.describe(user = "Target User")
+async def unblock(ctx: discord.Interaction, user: str):
+    global BLOCKLIST
+    global BLOCKED_USERS
+    if not ctx.user.id in ADMINS:
+        await ctx.response.send_message(f'You are not an admin!')
+    else:
+        user_id = int(re.search(r'\d+', user).group())
+
+        if user_id in BLOCKLIST["blocked"]["users"]:
+            BLOCKLIST["blocked"]["users"].remove(user_id)
+
+        with open('./src/config/blocklist.toml', 'w') as f:
+            toml.dump(BLOCKLIST, f)
+
+        BLOCKLIST = toml.load("./src/config/blocklist.toml")
+        BLOCKED_USERS = BLOCKLIST["blocked"]["users"]
+
+        await ctx.response.send_message(f'Removed {user} from blocklist!')
+
+### MISC ###
+
 @bot.tree.command(name="version", description="Print Current Version")
 async def version(ctx):
-    await ctx.response.send_message(f'```Current Version: "{VERSION}"```')
+    await ctx.response.send_message(f'```Current Version: "{TAG}"```')
 
 @bot.tree.command(name="source", description="Print Source Code Link")
 async def source(ctx):

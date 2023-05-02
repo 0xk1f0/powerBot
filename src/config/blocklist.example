@@ -1,0 +1,6 @@
+# who is blocked (UID)
+# as int
+[blocked]
+users = [
+    1234,
+]

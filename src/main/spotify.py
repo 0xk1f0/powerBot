@@ -5,11 +5,11 @@ import json
 import os
 
 # Load the config.toml file
-config = toml.load("config.toml")
+CONFIG = toml.load("./src/config/config.toml")
 
 # Extract the client ID and client secret from the config file
-ID = config["spotify"]["client_id"]
-SECRET = config["spotify"]["client_secret"]
+ID = CONFIG["spotify"]["client_id"]
+SECRET = CONFIG["spotify"]["client_secret"]
 
 def save_as_json(fetched_name, fetched_owner, fetched_tracks, submitter_name):
     playlist_name = fetched_name

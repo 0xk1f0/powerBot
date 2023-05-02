@@ -3,6 +3,9 @@ reddit_top_usage = "/top <subreddit> <['all', 'day', 'hour', 'month', 'week', 'y
 spotify_archive_usage = "/archive <url> <username>"
 err = ""
 status = ""
+admins = [
+    1234,
+]
 
 [spotify]
 client_id = ""
@@ -18,6 +21,7 @@ daily_sub = ""
 client_id = ""
 client_secret = ""
 user_agent = ""
+fetch_cap = ""
 
 [triggers]
 list = [

@@ -2,16 +2,16 @@ import toml
 import os
 import requests
 import aiohttp
-from src.helpers import compress
+from main.helpers import compress
 from discord import File as dF
 
 # Load the config.toml file
-config = toml.load("config.toml")
+CONFIG = toml.load("./src/config/config.toml")
 
 # Extract the client ID and client secret and agent from the config file
-ID = config["reddit"]["client_id"]
-SECRET = config["reddit"]["client_secret"]
-AGENT = config["reddit"]["client_secret"]
+ID = CONFIG["reddit"]["client_id"]
+SECRET = CONFIG["reddit"]["client_secret"]
+AGENT = CONFIG["reddit"]["client_secret"]
 
 # fixed API timespan declarations
 TIMESPANS = ["all", "day", "hour", "month", "week", "year"]

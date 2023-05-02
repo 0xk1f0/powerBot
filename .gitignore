@@ -103,4 +103,4 @@ venv/
 # specific
 data/
 .cache*
-config.toml
+*.toml
