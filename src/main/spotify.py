@@ -3,6 +3,7 @@ import datetime
 import toml
 import json
 import os
+import re
 
 # Load the config.toml file
 CONFIG = toml.load("./src/config/config.toml")
@@ -10,6 +11,11 @@ CONFIG = toml.load("./src/config/config.toml")
 # Extract the client ID and client secret from the config file
 ID = CONFIG["spotify"]["client_id"]
 SECRET = CONFIG["spotify"]["client_secret"]
+
+# check for valid spotify URL using regular expression
+def is_valid_url(url):
+    regex = re.compile(r'^https://open\.spotify\.com/playlist/.+$')
+    return re.match(regex, url) is not None
 
 def save_as_json(fetched_name, fetched_owner, fetched_tracks, submitter_name):
     playlist_name = fetched_name

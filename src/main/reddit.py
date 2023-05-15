@@ -2,7 +2,6 @@ import toml
 import os
 import requests
 import aiohttp
-from main.helpers import compress
 from discord import File as dF
 
 # Load the config.toml file
@@ -69,12 +68,11 @@ async def ready_image(img: str, needs_spoiler: bool):
         # write response to file
         with open(os.path.join(f"{os.getcwd()}/data", f"rdt_tmpimg.{file_ext}"), "wb") as f:
             f.write(response.content)
-        compress(file_ext, f"{os.getcwd()}/data/", f"rdt_tmpimg.{file_ext}")
     except:
         return False
     # filter file name from URL
     file_name = img.split("/")[-1]
     # open the file and return it as discord file to send
-    with open(os.path.join(f"{os.getcwd()}/data", f"proc_rdt_tmpimg.{file_ext}"), "rb") as f:
+    with open(os.path.join(f"{os.getcwd()}/data", f"rdt_tmpimg.{file_ext}"), "rb") as f:
         picture = dF(f, spoiler=needs_spoiler, filename=file_name)
         return picture

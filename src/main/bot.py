@@ -5,9 +5,8 @@ import uuid
 import re
 from discord.ext import commands, tasks
 from discord import app_commands
-from main.spotify import perform_archive
+from main.spotify import perform_archive, is_valid_url
 from main.reddit import perform_fetch, ready_image, check_sub, TIMESPANS
-from main.helpers import is_valid_url
 from datetime import datetime
 
 # Load the config.toml and version file
