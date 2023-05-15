@@ -66,30 +66,33 @@ async def ready_image(img: str, needs_spoiler: bool):
         # get file ending
         file_ext = img.split(".")[-1]
         # fetch the image
-        response = requests.get(img)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                img,
+                headers=HEADERS
+            ) as response:
+                data = await response.read()
         # get path with uuid
         IMG_UUID = uuid.uuid4()
         IMG_PATH = os.path.join(f"{os.getcwd()}/data", f"{IMG_UUID}.{file_ext}")
         # write response to file
         with open(IMG_PATH, "wb") as f:
-            f.write(response.content)
+            f.write(data)
         # downscale with qds
-        subprocess.run([
+        subprocess.Popen([
             "./src/bin/qds",
             "--image",
             IMG_PATH
-            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).wait()
         # remove original file
         os.remove(IMG_PATH)
+        # get path
+        FILE_PATH = os.path.join(f"{os.getcwd()}/data", f"qds_procd_{IMG_UUID}.{file_ext}")
+        # open the file and return it as discord file to send
+        with open(FILE_PATH, "rb") as f:
+            picture = dF(f, spoiler=needs_spoiler, filename=f"{IMG_UUID}.{file_ext}")
+        # remove and return
+        os.remove(FILE_PATH)
+        return picture
     except:
         return False
-    # filter file name from URL
-    FILE_NAME = img.split("/")[-1]
-    # get path
-    FILE_PATH = os.path.join(f"{os.getcwd()}/data", f"qds_procd_{IMG_UUID}.{file_ext}")
-    # open the file and return it as discord file to send
-    with open(FILE_PATH, "rb") as f:
-        picture = dF(f, spoiler=needs_spoiler, filename=FILE_NAME)
-    # remove and return
-    os.remove(FILE_PATH)
-    return picture
