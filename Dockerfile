@@ -18,7 +18,17 @@ COPY src ./src
 RUN mkdir data
 
 # Install deps
+RUN apt-get update
+RUN apt-get install -y -q build-essential curl
 RUN pip install --no-cache-dir -r requirements.txt
 
+# rust install and build for qds
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+WORKDIR /app/src/opt/qds
+RUN cargo build --release
+RUN cp target/release/qds ../../bin/
+
 # Start bot
+WORKDIR /app
 CMD ["python3", "src/runbot.py"]
