@@ -11,7 +11,7 @@ future==0.18.3
 idna==3.4
 multidict==6.0.4
 Pillow==9.5.0
-redis==4.5.4
+redis==4.5.5
 requests==2.30.0
 six==1.16.0
 spotipy==2.23.0
