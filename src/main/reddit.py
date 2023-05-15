@@ -1,7 +1,9 @@
 import toml
 import os
+import uuid
 import requests
 import aiohttp
+import subprocess
 from discord import File as dF
 
 # Load the config.toml file
@@ -65,14 +67,29 @@ async def ready_image(img: str, needs_spoiler: bool):
         file_ext = img.split(".")[-1]
         # fetch the image
         response = requests.get(img)
+        # get path with uuid
+        IMG_UUID = uuid.uuid4()
+        IMG_PATH = os.path.join(f"{os.getcwd()}/data", f"{IMG_UUID}.{file_ext}")
         # write response to file
-        with open(os.path.join(f"{os.getcwd()}/data", f"rdt_tmpimg.{file_ext}"), "wb") as f:
+        with open(IMG_PATH, "wb") as f:
             f.write(response.content)
+        # downscale with qds
+        subprocess.run([
+            "./src/bin/qds",
+            "--image",
+            IMG_PATH
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # remove original file
+        os.remove(IMG_PATH)
     except:
         return False
     # filter file name from URL
-    file_name = img.split("/")[-1]
+    FILE_NAME = img.split("/")[-1]
+    # get path
+    FILE_PATH = os.path.join(f"{os.getcwd()}/data", f"qds_procd_{IMG_UUID}.{file_ext}")
     # open the file and return it as discord file to send
-    with open(os.path.join(f"{os.getcwd()}/data", f"rdt_tmpimg.{file_ext}"), "rb") as f:
-        picture = dF(f, spoiler=needs_spoiler, filename=file_name)
-        return picture
+    with open(FILE_PATH, "rb") as f:
+        picture = dF(f, spoiler=needs_spoiler, filename=FILE_NAME)
+    # remove and return
+    os.remove(FILE_PATH)
+    return picture
