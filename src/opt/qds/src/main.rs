@@ -69,6 +69,9 @@ impl Subject {
 
             // save the image
             image.save(path_image).map_err(|err| err.to_string())?;
+
+            // remove the original input image
+            fs::remove_file(self.image_path).map_err(|err| err.to_string())?;
         } else {
             // image is small enough, just rename it as processed
             fs::rename(self.image_path, path_image).map_err(|err| err.to_string())?;

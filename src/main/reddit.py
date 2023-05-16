@@ -79,19 +79,17 @@ async def ready_image(img: str, needs_spoiler: bool):
         with open(IMG_PATH, "wb") as f:
             f.write(data)
         # downscale with qds
-        subprocess.Popen([
+        subprocess.run([
             "./src/bin/qds",
             "--image",
             IMG_PATH
-            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).wait()
-        # remove original file
-        os.remove(IMG_PATH)
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         # get path
         FILE_PATH = os.path.join(f"{os.getcwd()}/data", f"qds_procd_{IMG_UUID}.{file_ext}")
         # open the file and return it as discord file to send
         with open(FILE_PATH, "rb") as f:
-            picture = dF(f, spoiler=needs_spoiler, filename=f"{IMG_UUID}.{file_ext}")
-        # remove and return
+            picture = dF(f, spoiler=needs_spoiler)
+        # remove processed file
         os.remove(FILE_PATH)
         return picture
     except:
