@@ -1,7 +1,6 @@
 import toml
 import os
 import uuid
-import requests
 import aiohttp
 import subprocess
 from discord import File as dF
@@ -30,17 +29,14 @@ async def check_sub(sub: str):
                 f'https://www.reddit.com/r/{sub}/about.json',
                 headers=HEADERS
             ) as response:
-                data = await response.json()
-            if data['data']['over18']:
-                return [True, True]
-            else:
-                return [True, False]
+                if response.status == 200:
+                    return True
     except:
         return False
 
 # perform the fetch on the sub
 async def perform_fetch(sub: str, count: int, time: str):
-    image_urls = []
+    image_units = []
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(
@@ -51,14 +47,15 @@ async def perform_fetch(sub: str, count: int, time: str):
     except:
         return False
     for post in data['data']['children']:
-        url = post['data']['url']
-        if url.endswith((
+        SPOILER_TAG = post['data']['over_18']
+        URL = post['data']['url']
+        if URL.endswith((
             ".jpg",
             ".jpeg",
             ".png"
-        )) and len(image_urls) < count: 
-            image_urls.append(url)
-    return image_urls
+        )) and len(image_units) < count: 
+            image_units.append([URL, SPOILER_TAG])
+    return image_units
 
 # prepare image for the bot
 async def ready_image(img: str, needs_spoiler: bool):

@@ -66,7 +66,7 @@ async def daily_ticker():
             await channel.send(f"Time for r/{DAILY_SUB} Daily Top {DAILY_COUNT}!")
             for image in result:
                 # ALWAYS SEND DAILY WITH SPOILER
-                final = await ready_image(image, True)
+                final = await ready_image(image[0], True)
                 if final != False:
                     message = await channel.send(file=final)
                     await message.add_reaction("👍")
@@ -129,13 +129,12 @@ async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: in
         if is_sub == False:
             await ctx.response.send_message(f"-.- could not find that subreddit..")
         else:
-            nsfw_flag = is_sub[1]
             await ctx.response.send_message(f"^^ subreddit found! Fetching..")
             result = await perform_fetch(subreddit, count, timespan)
             if result != False and len(result) != 0:
                 await ctx.channel.send(f"Top {count}/{timespan} images from r/{subreddit}")
                 for image in result:
-                    final = await ready_image(image, nsfw_flag)
+                    final = await ready_image(image[0], image[1])
                     if final != False:
                         await ctx.channel.send(file=final)
                     else:
