@@ -31,6 +31,8 @@ async def check_sub(sub: str):
             ) as response:
                 if response.status == 200:
                     return True
+                else:
+                    return False
     except:
         return False
 
