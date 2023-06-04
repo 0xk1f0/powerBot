@@ -6,7 +6,8 @@ import re
 from discord.ext import commands, tasks
 from discord import app_commands
 from main.spotify import perform_archive, is_valid_url
-from main.reddit import perform_fetch, ready_image, check_sub, TIMESPANS
+from main.reddit import perform_fetch, save_units, check_sub, TIMESPANS
+from main.wfp import get_wfps, SFW_CATEGORIES, NSFW_CATEGORIES, TYPES
 from datetime import datetime
 
 # Load the config.toml and version file
@@ -61,12 +62,12 @@ async def daily_ticker():
     if now.hour == 12 and now.minute == 1:
         await bot.wait_until_ready()
         channel = await bot.fetch_channel(DAILY_ID)
-        result = await perform_fetch(DAILY_SUB, DAILY_COUNT, "day")
+        result = await perform_fetch(DAILY_SUB, DAILY_COUNT, "day", (".jpg",".jpeg",".png"))
         if result != False and len(result) != 0:
             await channel.send(f"Time for r/{DAILY_SUB} Daily Top {DAILY_COUNT}!")
             for image in result:
                 # ALWAYS SEND DAILY WITH SPOILER
-                final = await ready_image(image[0], True)
+                final = await save_units(image[0], True)
                 if final != False:
                     message = await channel.send(file=final)
                     await message.add_reaction("👍")
@@ -121,7 +122,7 @@ async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: in
         await ctx.response.send_message(f'You are currently on the blocklist!')
         return
     if timespan not in TIMESPANS:
-        await ctx.response.send_message(f"Invalid Timespan, try one of: 'all', 'day', 'hour', 'month', 'week', 'year'")
+        await ctx.response.send_message(f"Invalid Timespan, try one of: {TIMESPANS}")
     elif count > int(REDDIT_CAP):
         await ctx.response.send_message(f"Max Count is capped to {REDDIT_CAP}!")
     else:
@@ -130,17 +131,50 @@ async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: in
             await ctx.response.send_message(f"-.- could not find that subreddit..")
         else:
             await ctx.response.send_message(f"^^ subreddit found! Fetching..")
-            result = await perform_fetch(subreddit, count, timespan)
+            result = await perform_fetch(subreddit, count, timespan, (".jpg",".jpeg",".png", ".gif", ".mp4"))
             if result != False and len(result) != 0:
                 await ctx.channel.send(f"Top {count}/{timespan} images from r/{subreddit}")
-                for image in result:
-                    final = await ready_image(image[0], image[1])
-                    if final != False:
-                        await ctx.channel.send(file=final)
+                for unit in result:
+                    if unit[1] == True:
+                        await ctx.channel.send(f"|| {unit[0]} ||")
                     else:
-                        continue
+                        await ctx.channel.send(unit[0])
             else:
                 await ctx.channel.send(f"{ERR}")
+
+@bot.tree.command(name="wfp", description=REDDIT_TOP_USAGE)
+@app_commands.describe(type = "Target Subreddit")
+@app_commands.describe(category = "Image Category")
+@app_commands.describe(count = "Image Count")
+async def wft(ctx: discord.Interaction, type: str, category: str, count: int):
+    # check if user is blocked
+    if ctx.user.id in BLOCKED_USERS:
+        await ctx.response.send_message(f'You are currently on the blocklist!')
+        return
+    # check selected type
+    if type not in TYPES:
+        await ctx.response.send_message(f"Invalid Type, try one of: {TYPES}")
+        return
+    # check category
+    if type == "sfw":
+        CHOOSEN_CATS = SFW_CATEGORIES
+    else:
+        CHOOSEN_CATS = NSFW_CATEGORIES
+    if category not in CHOOSEN_CATS:
+        await ctx.response.send_message(f"Invalid Type, try one of: {CHOOSEN_CATS}!")
+    elif count > int(REDDIT_CAP):
+        await ctx.response.send_message(f"Max Count is capped to {REDDIT_CAP}!")
+    else:
+        await ctx.response.send_message(f"^^ Getting you {count} pics..")
+        result = await get_wfps(type=type, category=category, count=count)
+        if result != False or None and len(result) != 0:
+            for unit in result:
+                if unit[1] == "nsfw":
+                    await ctx.channel.send(f"|| {unit[0]} ||")
+                else:
+                    await ctx.channel.send(unit[0])
+        else:
+            await ctx.channel.send(f"{ERR}")
 
 ### BLOCKING ###
 

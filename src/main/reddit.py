@@ -17,9 +17,7 @@ AGENT = CONFIG["reddit"]["client_secret"]
 TIMESPANS = ["all", "day", "hour", "month", "week", "year"]
 
 # request headers
-HEADERS = {
-    'User-Agent': AGENT,
-}
+HEADERS = { 'User-Agent': AGENT }
 
 # check if sub even exists and if it's nsfw
 async def check_sub(sub: str):
@@ -37,8 +35,8 @@ async def check_sub(sub: str):
         return False
 
 # perform the fetch on the sub
-async def perform_fetch(sub: str, count: int, time: str):
-    image_units = []
+async def perform_fetch(sub: str, count: int, time: str, formats: tuple):
+    units = []
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(
@@ -51,16 +49,12 @@ async def perform_fetch(sub: str, count: int, time: str):
     for post in data['data']['children']:
         SPOILER_TAG = post['data']['over_18']
         URL = post['data']['url']
-        if URL.endswith((
-            ".jpg",
-            ".jpeg",
-            ".png"
-        )) and len(image_units) < count: 
-            image_units.append([URL, SPOILER_TAG])
-    return image_units
+        if URL.endswith(formats) and len(units) < count: 
+            units.append([URL, SPOILER_TAG])
+    return units
 
 # prepare image for the bot
-async def ready_image(img: str, needs_spoiler: bool):
+async def save_units(img: str, needs_spoiler: bool):
     try:
         # get file ending
         file_ext = img.split(".")[-1]
