@@ -27,6 +27,7 @@ BLOCKED_USERS = BLOCKLIST["blocked"]["users"]
 ADMINS = CONFIG["general"]["admins"]
 REDDIT_TOP_USAGE = CONFIG["general"]["reddit_top_usage"]
 SPOTIFY_ARCHIVE_USAGE = CONFIG["general"]["spotify_archive_usage"]
+WFP_USAGE = CONFIG["general"]["wfp_usage"]
 TRIGGERLIST = CONFIG["triggers"]["list"]
 REDDIT_CAP = CONFIG["reddit"]["fetch_cap"]
 ERR = CONFIG["general"]["err"]
@@ -142,8 +143,8 @@ async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: in
             else:
                 await ctx.channel.send(f"{ERR}")
 
-@bot.tree.command(name="wfp", description=REDDIT_TOP_USAGE)
-@app_commands.describe(type = "Target Subreddit")
+@bot.tree.command(name="wfp", description=WFP_USAGE)
+@app_commands.describe(type = "SFW or NSFW")
 @app_commands.describe(category = "Image Category")
 @app_commands.describe(count = "Image Count")
 async def wft(ctx: discord.Interaction, type: str, category: str, count: int):
@@ -231,7 +232,3 @@ async def unblock(ctx: discord.Interaction, user: str):
 @bot.tree.command(name="version", description="Print Current Version")
 async def version(ctx):
     await ctx.response.send_message(f'```Current Version: "{TAG}"```')
-
-@bot.tree.command(name="source", description="Print Source Code Link")
-async def source(ctx):
-    await ctx.response.send_message(f"*On GitHub at https://github.com/0xk1f0/powerBot :)*")

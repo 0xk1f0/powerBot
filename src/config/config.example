@@ -1,6 +1,7 @@
 [general]
-reddit_top_usage = "/top <subreddit> <['all', 'day', 'hour', 'month', 'week', 'year']> <count>"
-spotify_archive_usage = "/archive <url> <username>"
+reddit_top_usage = "/top <subreddit> <timespan> <count>"
+spotify_archive_usage = "/archive <url> <format> <reference>"
+wfp_usage = "/wfp <type> <category> <count>"
 err = ""
 status = ""
 admins = [
