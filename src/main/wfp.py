@@ -23,6 +23,7 @@ async def get_wfps(type: str, category: int, count: int):
                     f'https://api.waifu.pics/{type}/{category}'
                 ) as response:
                     data = await response.json()
+                    session.close()
         except:
             return False
         if data['url']:
