@@ -1,11 +1,13 @@
 #!./env/bin/python3
 
-from main.bot import bot
 import toml
+from os import getenv, path
+from app.bot import bot
 
 # Load the config.toml and version file
-CONFIG = toml.load("./src/config/config.toml")
 VERSION = toml.load("VERSION")
+CONFIG = getenv('CONF_PATH') or '/var/lib/powerBot/config'
+CONFIG = toml.load(path.join(CONFIG, 'config.toml'))
 
 # Extract token from config
 TOKEN = CONFIG["discord"]["bot_token"]

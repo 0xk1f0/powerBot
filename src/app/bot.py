@@ -5,15 +5,20 @@ import uuid
 import re
 from discord.ext import commands, tasks
 from discord import app_commands
-from main.spotify import perform_archive, is_valid_url
-from main.reddit import perform_fetch, save_units, check_sub, TIMESPANS
-from main.wfp import get_wfps, SFW_CATEGORIES, NSFW_CATEGORIES, TYPES
+from app.spotify import perform_archive, is_valid_url
+from app.reddit import perform_fetch, save_units, check_sub, TIMESPANS
+from app.wfp import get_wfps, SFW_CATEGORIES, NSFW_CATEGORIES, TYPES
 from datetime import datetime
 
-# Load the config.toml and version file
-CONFIG = toml.load("./src/config/config.toml")
-BLOCKLIST = toml.load("./src/config/blocklist.toml")
+# Load the config.toml file with blocklist
+CONFIG = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'
+CONFIG = toml.load(os.path.join(CONFIG, 'config.toml'))
+BLOCKLIST = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'
+BLOCKLIST = toml.load(os.path.join(BLOCKLIST, 'blocklist.toml'))
 VERSION = toml.load("VERSION")
+
+# data path for cache
+DATA_PATH = os.getenv('CONF_PATH') or '/var/lib/powerBot/data'
 
 # Extract discord parameters from the config file
 DAILY_ID = CONFIG["discord"]["daily_channel"]
@@ -108,7 +113,7 @@ async def archive(ctx: discord.Interaction, url: str, format: str, reference: st
         await ctx.response.send_message(f"Archiving that for you..")
         result = await perform_archive(id, format, reference)
         if result != False:
-            with open(os.path.join(f"{os.getcwd()}/data", f"playlist.{format}"), 'rb') as f:
+            with open(os.path.join(DATA_PATH, f"playlist.{format}"), 'rb') as f:
                 playlist_file = discord.File(f, filename=f"playlist_{reference}_{uuid.uuid4()}.{format}")
                 await ctx.channel.send(f"Archived for you as .{format}! ^w^", file=playlist_file)
         else:

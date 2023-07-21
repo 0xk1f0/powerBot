@@ -6,7 +6,11 @@ import subprocess
 from discord import File as dF
 
 # Load the config.toml file
-CONFIG = toml.load("./src/config/config.toml")
+CONFIG = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'
+CONFIG = toml.load(os.path.join(CONFIG, 'config.toml'))
+
+# data path for cache
+DATA_PATH = os.getenv('CONF_PATH') or '/var/lib/powerBot/data'
 
 # Extract the client ID and client secret and agent from the config file
 ID = CONFIG["reddit"]["client_id"]
@@ -71,7 +75,7 @@ async def save_units(img: str, needs_spoiler: bool):
                 session.close()
         # get path with uuid
         IMG_UUID = uuid.uuid4()
-        IMG_PATH = os.path.join(f"{os.getcwd()}/data", f"{IMG_UUID}.{file_ext}")
+        IMG_PATH = os.path.join(DATA_PATH, f"{IMG_UUID}.{file_ext}")
         # write response to file
         with open(IMG_PATH, "wb") as f:
             f.write(data)
@@ -82,7 +86,7 @@ async def save_units(img: str, needs_spoiler: bool):
             IMG_PATH
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         # get path
-        FILE_PATH = os.path.join(f"{os.getcwd()}/data", f"qds_procd_{IMG_UUID}.{file_ext}")
+        FILE_PATH = os.path.join(DATA_PATH, f"qds_procd_{IMG_UUID}.{file_ext}")
         # open the file and return it as discord file to send
         with open(FILE_PATH, "rb") as f:
             picture = dF(f, spoiler=needs_spoiler)

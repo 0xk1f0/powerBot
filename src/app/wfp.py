@@ -1,8 +1,10 @@
 import aiohttp
 import toml
+from os import getenv, path
 
 # Load the config.toml file
-CONFIG = toml.load("./src/config/config.toml")
+CONFIG = getenv('CONF_PATH') or '/var/lib/powerBot/config'
+CONFIG = toml.load(path.join(CONFIG, 'config.toml'))
 
 # wfp specific things
 TYPES = [ "sfw", "nsfw" ]

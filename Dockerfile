@@ -1,5 +1,5 @@
 # from deno alpine latest
-FROM python:3
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
@@ -12,23 +12,15 @@ COPY VERSION .
 COPY .cache* .
 
 # Copy all files from src/
-COPY src ./src
+COPY src .
 
-# add data folder
-RUN mkdir data
+# add data folder and conf dir
+RUN mkdir /var/lib/powerBot/config
+RUN mkdir /var/lib/powerBot/data
 
 # Install deps
 RUN pip install --no-cache-dir -r requirements.txt
 
-# rust install and build for qds
-# RUN apt-get update
-# RUN apt-get install -y -q build-essential curl
-# RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-# ENV PATH="/root/.cargo/bin:${PATH}"
-# WORKDIR /app/src/opt/qds
-# RUN cargo build --release
-# RUN cp target/release/qds ../../bin/
-
 # Start bot
 WORKDIR /app
-CMD ["python3", "src/runbot.py"]
+CMD ["python3", "runbot.py"]

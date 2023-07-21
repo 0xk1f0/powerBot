@@ -6,7 +6,8 @@ import os
 import re
 
 # Load the config.toml file
-CONFIG = toml.load("./src/config/config.toml")
+CONFIG = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'
+CONFIG = toml.load(os.path.join(CONFIG, 'config.toml'))
 
 # Extract the client ID and client secret from the config file
 ID = CONFIG["spotify"]["client_id"]

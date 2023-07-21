@@ -4,6 +4,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    volumes:
+      - ./config:/var/lib/powerBot/config
+      - ./data:/var/lib/powerBot/data
     environment:
-      - TZ=Europe/Vienna
+      # CONF_PATH: '/some/path/'
+      # DATA_PATH: '/some/path/'
+      TZ: 'Europe/Vienna'
     restart: unless-stopped

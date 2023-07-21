@@ -12,8 +12,13 @@ A do-it-all discord bot written in spaghetti python
 git clone https://github.com/0xk1f0/powerBot
 cd powerBot/
 python -m venv env
-./runbot.py
+source env/bin/activate
+pip install -r requirements.txt
+DATA_PATH="./data" CONF_PATH="./config" python src/runbot.py
 ```
+
+Note the two leading Environment Variables to overwrite the config and data
+location for the bot.
 
 ### Docker
 
@@ -24,6 +29,9 @@ git clone https://github.com/0xk1f0/powerBot
 cd powerBot/
 docker-compose up --build
 ```
+
+The config location is handled by bind mounts, so the bot doesnt need to be rebuild when
+just the config changes.
 
 ### Obtaining the API Keys
 
