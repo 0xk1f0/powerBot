@@ -6,6 +6,28 @@ A do-it-all discord bot written in spaghetti python
 
 > Don't forget to edit and rename the example `config.example` accordingly
 
+### Docker
+
+A docker image is autobuilt and pushed to this repo's registry using
+a workflow.
+
+```bash
+docker pull ghcr.io/0xk1f0/powerbot:master
+```
+
+You can use the docker-compose file provided in this repo for easy deployment.
+
+> Don't forget to set the preferred Timezone in the `docker-compose.yml` file
+
+```bash
+git clone https://github.com/0xk1f0/powerBot
+cd powerBot/
+docker-compose up --build
+```
+
+The config location is handled by bind mounts, so the bot doesnt need to be rebuild when
+just the config changes.
+
 ### Manual
 
 ```bash
@@ -19,19 +41,6 @@ DATA_PATH="./data" CONF_PATH="./config" python src/runbot.py
 
 Note the two leading Environment Variables to overwrite the config and data
 location for the bot.
-
-### Docker
-
-> Don't forget to set the preferred Timezone in the `docker-compose.yml` file
-
-```bash
-git clone https://github.com/0xk1f0/powerBot
-cd powerBot/
-docker-compose up --build
-```
-
-The config location is handled by bind mounts, so the bot doesnt need to be rebuild when
-just the config changes.
 
 ### Obtaining the API Keys
 

@@ -1,9 +1,7 @@
 version: '3'
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/0xk1f0/powerbot:master
     volumes:
       - ./config:/var/lib/powerBot/config
       - ./data:/var/lib/powerBot/data
