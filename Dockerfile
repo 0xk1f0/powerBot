@@ -8,15 +8,12 @@ WORKDIR /app
 COPY requirements.txt .
 COPY VERSION .
 
-# this is the spotify cache file
-COPY .cache* .
-
 # Copy all files from src/
 COPY src .
 
 # add data folder and conf dir
-RUN mkdir /var/lib/powerBot/config
-RUN mkdir /var/lib/powerBot/data
+RUN mkdir -p /var/lib/powerBot/config
+RUN mkdir -p /var/lib/powerBot/data
 
 # Install deps
 RUN pip install --no-cache-dir -r requirements.txt
