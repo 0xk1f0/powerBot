@@ -32,10 +32,10 @@ async def check_sub(sub: str):
                 headers=HEADERS
             ) as response:
                 if response.status == 200:
-                    session.close()
+                    await session.close()
                     return True
                 else:
-                    session.close()
+                    await session.close()
                     return False
     except:
         return False
@@ -50,7 +50,7 @@ async def perform_fetch(sub: str, count: int, time: str, formats: tuple):
                 headers=HEADERS
             ) as response:
                 data = await response.json()
-                session.close()
+                await session.close()
     except:
         return False
     for post in data['data']['children']:
@@ -72,7 +72,7 @@ async def save_units(img: str, needs_spoiler: bool):
                 headers=HEADERS
             ) as response:
                 data = await response.read()
-                session.close()
+                await session.close()
         # get path with uuid
         IMG_UUID = uuid.uuid4()
         IMG_PATH = os.path.join(DATA_PATH, f"{IMG_UUID}.{file_ext}")
