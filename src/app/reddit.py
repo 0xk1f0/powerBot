@@ -12,6 +12,9 @@ CONFIG = toml.load(os.path.join(CONFIG, 'config.toml'))
 # data path for cache
 DATA_PATH = os.getenv('CONF_PATH') or '/var/lib/powerBot/data'
 
+# binary path for downscaler
+DS_PATH = os.getenv('DS_PATH') or '/app/bin/qds'
+
 # Extract the client ID and client secret and agent from the config file
 ID = CONFIG["reddit"]["client_id"]
 SECRET = CONFIG["reddit"]["client_secret"]
@@ -81,7 +84,7 @@ async def save_units(img: str, needs_spoiler: bool):
             f.write(data)
         # downscale with qds
         subprocess.run([
-            "./src/bin/qds",
+            DS_PATH,
             "--image",
             IMG_PATH
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
