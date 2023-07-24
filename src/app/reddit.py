@@ -27,33 +27,28 @@ TIMESPANS = ["all", "day", "hour", "month", "week", "year"]
 HEADERS = { 'User-Agent': AGENT }
 
 # check if sub even exists and if it's nsfw
-async def check_sub(sub: str):
+async def check_sub(sub: str, session: aiohttp.ClientSession):
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f'https://www.reddit.com/r/{sub}/about.json',
-                headers=HEADERS
-            ) as response:
-                if response.status == 200:
-                    await session.close()
-                    return True
-                else:
-                    await session.close()
-                    return False
+        async with session.get(
+            f'https://www.reddit.com/r/{sub}/about.json',
+            headers=HEADERS
+        ) as response:
+            if response.status == 200:
+                return True
+            else:
+                return False
     except:
         return False
 
 # perform the fetch on the sub
-async def perform_fetch(sub: str, count: int, time: str, formats: tuple):
+async def perform_fetch(sub: str, count: int, time: str, formats: tuple, session: aiohttp.ClientSession):
     units = []
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f'https://www.reddit.com/r/{sub}/top.json?limit=50&t={time}',
-                headers=HEADERS
-            ) as response:
-                data = await response.json()
-                await session.close()
+        async with session.get(
+            f'https://www.reddit.com/r/{sub}/top.json?limit=50&t={time}',
+            headers=HEADERS
+        ) as response:
+            data = await response.json()
     except:
         return False
     for post in data['data']['children']:
@@ -64,18 +59,13 @@ async def perform_fetch(sub: str, count: int, time: str, formats: tuple):
     return units
 
 # prepare image for the bot
-async def save_units(img: str, needs_spoiler: bool):
+async def save_units(img: str, needs_spoiler: bool, session: aiohttp.ClientSession):
     try:
         # get file ending
         file_ext = img.split(".")[-1]
         # fetch the image
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                img,
-                headers=HEADERS
-            ) as response:
-                data = await response.read()
-                await session.close()
+        async with session.get(img,headers=HEADERS) as response:
+            data = await response.read()
         # get path with uuid
         IMG_UUID = uuid.uuid4()
         IMG_PATH = os.path.join(DATA_PATH, f"{IMG_UUID}.{file_ext}")

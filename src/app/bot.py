@@ -3,6 +3,7 @@ import discord
 import toml
 import uuid
 import re
+from aiohttp import ClientSession, TCPConnector
 from discord.ext import commands, tasks
 from discord import app_commands
 from app.spotify import perform_archive, is_valid_url
@@ -47,6 +48,9 @@ intents.members = True
 # Create a bot object
 bot = commands.Bot(command_prefix="/", intents=intents)
 
+# client session
+client_session = None
+
 # on bot ready
 @bot.event
 async def on_ready():
@@ -57,6 +61,13 @@ async def on_ready():
         print(e)
     # set presence
     await bot.change_presence(activity=discord.Game(STATUS))
+    # new aiohttp session
+    global client_session
+    client_session = ClientSession(
+        connector=TCPConnector(
+            limit=20
+        )
+    )
     # set daily task
     daily_ticker.start()
 
@@ -68,12 +79,18 @@ async def daily_ticker():
     if now.hour == 12 and now.minute == 1:
         await bot.wait_until_ready()
         channel = await bot.fetch_channel(DAILY_ID)
-        result = await perform_fetch(DAILY_SUB, DAILY_COUNT, "day", (".jpg",".jpeg",".png"))
+        result = await perform_fetch(
+            DAILY_SUB,
+            DAILY_COUNT,
+            "day",
+            (".jpg",".jpeg",".png"),
+            client_session
+        )
         if result != False and len(result) != 0:
             await channel.send(f"Time for r/{DAILY_SUB} Daily Top {DAILY_COUNT}!")
             for image in result:
                 # ALWAYS SEND DAILY WITH SPOILER
-                final = await save_units(image[0], True)
+                final = await save_units(image[0], True, client_session)
                 if final != False:
                     message = await channel.send(file=final)
                     await message.add_reaction("👍")
@@ -132,12 +149,18 @@ async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: in
     elif count > int(REDDIT_CAP):
         await ctx.response.send_message(f"Max Count is capped to {REDDIT_CAP}!")
     else:
-        is_sub = await check_sub(subreddit)
+        is_sub = await check_sub(subreddit, client_session)
         if is_sub == False:
             await ctx.response.send_message(f"-.- could not find that subreddit..")
         else:
             await ctx.response.send_message(f"^^ subreddit found! Fetching..")
-            result = await perform_fetch(subreddit, count, timespan, (".jpg",".jpeg",".png", ".gif", ".mp4"))
+            result = await perform_fetch(
+                subreddit,
+                count,
+                timespan,
+                (".jpg",".jpeg",".png", ".gif", ".mp4"),
+                client_session
+            )
             if result != False and len(result) != 0:
                 await ctx.channel.send(f"Top {count}/{timespan} images from r/{subreddit}")
                 for unit in result:
@@ -172,7 +195,7 @@ async def wft(ctx: discord.Interaction, type: str, category: str, count: int):
         await ctx.response.send_message(f"Max Count is capped to {REDDIT_CAP}!")
     else:
         await ctx.response.send_message(f"^^ Getting you {count} pics..")
-        result = await get_wfps(type=type, category=category, count=count)
+        result = await get_wfps(type, category, count, client_session)
         if result != False or None and len(result) != 0:
             for unit in result:
                 if unit[1] == "nsfw":

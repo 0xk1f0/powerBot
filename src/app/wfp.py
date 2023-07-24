@@ -16,16 +16,14 @@ SFW_CATEGORIES = [
 ]
 
 # perform the fetch on the sub
-async def get_wfps(type: str, category: int, count: int):
+async def get_wfps(type: str, category: int, count: int, session: aiohttp.ClientSession):
     units = []
     for i in range(0, count):
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    f'https://api.waifu.pics/{type}/{category}'
-                ) as response:
-                    data = await response.json()
-                    await session.close()
+            async with session.get(
+                f'https://api.waifu.pics/{type}/{category}'
+            ) as response:
+                data = await response.json()
         except:
             return False
         if data['url']:
