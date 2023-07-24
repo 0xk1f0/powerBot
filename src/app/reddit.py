@@ -19,7 +19,7 @@ DS_PATH = os.getenv('DS_PATH') or '/app/bin/qds'
 # Extract the client ID and client secret and agent from the config file
 ID = CONFIG["reddit"]["client_id"]
 SECRET = CONFIG["reddit"]["client_secret"]
-AGENT = CONFIG["reddit"]["client_secret"]
+AGENT = CONFIG["reddit"]["user_agent"]
 
 # fixed API timespan declarations
 TIMESPANS = ["all", "day", "hour", "month", "week", "year"]
