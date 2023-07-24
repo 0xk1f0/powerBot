@@ -4,6 +4,7 @@ import uuid
 import aiohttp
 import subprocess
 from discord import File as dF
+from base64 import b64encode
 
 # Load the config.toml file
 CONFIG = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'
@@ -24,7 +25,11 @@ AGENT = CONFIG["reddit"]["client_secret"]
 TIMESPANS = ["all", "day", "hour", "month", "week", "year"]
 
 # request headers
-HEADERS = { 'User-Agent': AGENT }
+HEADERS = {
+    # i think it goes like this, reddit has terrible API docs
+    'Authorization': f'Basic {b64encode(b"{ID}:{SECRET}")}',
+    'User-Agent': AGENT
+}
 
 # check if sub even exists and if it's nsfw
 async def check_sub(sub: str, session: aiohttp.ClientSession):
