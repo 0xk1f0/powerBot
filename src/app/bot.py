@@ -205,6 +205,34 @@ async def wft(ctx: discord.Interaction, type: str, category: str, count: int):
         else:
             await ctx.channel.send(f"{ERR}")
 
+### MODERATION ###
+
+@bot.tree.command(name="purge", description="Delete the next x Messages")
+@app_commands.describe(message_id = "ID of the Starting Message")
+@app_commands.describe(count = "Number of Messages to purge")
+async def purge_reply(ctx: discord.Interaction, message_id: str, count: int):
+    # check if user is blocked
+    if ctx.user.id in BLOCKED_USERS:
+        await ctx.response.send_message(f'You are currently on the blocklist!')
+        return
+    # check if user is admin
+    if not ctx.user.id in ADMINS:
+        await ctx.response.send_message(f'You are not an admin!')
+        return
+    try:
+        # fetch message by ID
+        MESSAGE = await ctx.channel.fetch_message(message_id)
+        # get the history after message id
+        HISTORY = [message async for message in ctx.channel.history(after=MESSAGE, limit=count) if message.author != bot.user]
+        # delete it
+        if HISTORY:
+            await ctx.response.send_message(f'Deleting {len(HISTORY)} message/s!')
+            await ctx.channel.delete_messages(HISTORY)
+        else:
+            await ctx.response.send_message('No Messages to delete!')
+    except:
+        await ctx.channel.send(f"{ERR}")
+
 ### BLOCKING ###
 
 @bot.tree.command(name="block", description="Block a user")
