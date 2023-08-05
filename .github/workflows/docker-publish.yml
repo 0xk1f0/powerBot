@@ -8,8 +8,12 @@ name: Docker
 on:
   push:
     branches: [ "master" ]
+    paths:
+    - 'src/**'
   pull_request:
     branches: [ "master" ]
+    paths:
+    - 'src/**'
 
 env:
   # Use docker.io for Docker Hub if empty
