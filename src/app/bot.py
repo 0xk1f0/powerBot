@@ -126,7 +126,7 @@ async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: in
         if is_sub == False:
             await ctx.response.send_message(f"-.- could not find that subreddit..")
         else:
-            await ctx.response.send_message(f"^^ subreddit found! Fetching..")
+            await ctx.response.defer()
             result = await perform_fetch(
                 subreddit,
                 count,
@@ -135,14 +135,14 @@ async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: in
                 client_session
             )
             if result != False and len(result) != 0:
-                await ctx.channel.send(f"Top {count}/{timespan} images from r/{subreddit}")
+                await ctx.followup.send(f"Top {count}/{timespan} images from r/{subreddit}")
                 for unit in result:
                     if unit[1] == True:
                         await ctx.channel.send(f"|| {unit[0]} ||")
                     else:
                         await ctx.channel.send(unit[0])
             else:
-                await ctx.channel.send(f"{ERR}")
+                await ctx.followup.send(f"{ERR}")
 
 @bot.tree.command(name="wfp", description=CONFIG["general"]["wfp_usage"])
 @app_commands.describe(type = f"Type: {TYPES}")
@@ -167,16 +167,17 @@ async def wft(ctx: discord.Interaction, type: str, category: str, count: int):
     elif count > int(REDDIT_CAP):
         await ctx.response.send_message(f"Max Count is capped to {REDDIT_CAP}!")
     else:
-        await ctx.response.send_message(f"Getting you {count} {type} {category} pics..")
+        await ctx.response.defer()
         result = await get_wfps(type, category, count, client_session)
         if result != False or None and len(result) != 0:
+            await ctx.followup.send(f"Here are {count} {type} {category}'s")
             for unit in result:
                 if unit[1] == "nsfw":
                     await ctx.channel.send(f"|| {unit[0]} ||")
                 else:
                     await ctx.channel.send(unit[0])
         else:
-            await ctx.channel.send(f"{ERR}")
+            await ctx.followup.send(f"{ERR}")
 
 @bot.tree.command(name="mac", description=CONFIG["general"]["mac_usage"])
 @app_commands.describe(mac = "A valid MAC Address")
@@ -190,18 +191,18 @@ async def wft(ctx: discord.Interaction, mac: str):
         await ctx.response.send_message(f"That MAC just doesn't look right..")
         return
     else:
-        await ctx.response.send_message(f"Checking that MAC for you..")
+        await ctx.response.defer()
         result = await get_mac_vendor(mac, client_session)
         if result != False or None:
-            await ctx.channel.send(f"MAC belongs to: {result}")
+            await ctx.followup.send(f"MAC belongs to: {result}")
         else:
-            await ctx.channel.send(f"{ERR}")
+            await ctx.followup.send(f"{ERR}")
 
 ### MODERATION ###
 
 @bot.tree.command(name="purge", description="Delete the next x Messages")
-@app_commands.describe(message_id = "ID of the Starting Message")
-@app_commands.describe(count = "Number of Messages to purge")
+@app_commands.describe(message_id = "ID of the Message above Start")
+@app_commands.describe(count = "Number of Messages to Purge")
 async def purge_reply(ctx: discord.Interaction, message_id: str, count: int):
     # check if user is blocked
     if ctx.user.id in BLOCKED_USERS:
@@ -215,15 +216,17 @@ async def purge_reply(ctx: discord.Interaction, message_id: str, count: int):
         # fetch message by ID
         MESSAGE = await ctx.channel.fetch_message(message_id)
         # get the history after message id
-        HISTORY = [message async for message in ctx.channel.history(after=MESSAGE, limit=count) if message.author != bot.user]
+        HISTORY = [message async for message in ctx.channel.history(after=MESSAGE, limit=count)]
         # delete it
-        if HISTORY:
-            await ctx.response.send_message(f'Deleting {len(HISTORY)} message/s!')
+        if HISTORY and len(HISTORY) > 0:
+            await ctx.response.defer()
             await ctx.channel.delete_messages(HISTORY)
         else:
             await ctx.response.send_message('No Messages to delete!')
     except:
-        await ctx.channel.send(f"{ERR}")
+        await ctx.followup.send(f"{ERR}")
+    finally:
+        await ctx.followup.send(f'Deleted {len(HISTORY)} message/s!')
 
 ### BLOCKING ###
 
