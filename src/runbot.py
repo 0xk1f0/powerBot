@@ -9,13 +9,9 @@ VERSION = toml.load("VERSION")
 CONFIG = getenv('CONF_PATH') or '/var/lib/powerBot/config'
 CONFIG = toml.load(path.join(CONFIG, 'config.toml'))
 
-# Extract token from config
-TOKEN = CONFIG["discord"]["bot_token"]
-TAG = VERSION["tag"]
-
 # Print hello message
 print(f"""
-Starting v{TAG}...
+Starting Version {VERSION["tag"]}..
 
                               ____        _   
  _ __   _____      _____ _ __| __ )  ___ | |_ 
@@ -28,4 +24,4 @@ Starting v{TAG}...
 """)
 
 # Run this sht
-bot.run(TOKEN)
+bot.run(CONFIG["discord"]["bot_token"])

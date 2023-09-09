@@ -1,16 +1,12 @@
 [general]
 reddit_top_usage = "/top <subreddit> <timespan> <count>"
-spotify_archive_usage = "/archive <url> <format> <reference>"
 wfp_usage = "/wfp <type> <category> <count>"
+mac_usage = "/mac <address>"
 err = ""
 status = ""
 admins = [
     1234,
 ]
-
-[spotify]
-client_id = ""
-client_secret = ""
 
 [discord]
 bot_token = ""

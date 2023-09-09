@@ -7,8 +7,8 @@ from discord import File as dF
 from base64 import b64encode
 
 # Load the config.toml file
-CONFIG = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'
-CONFIG = toml.load(os.path.join(CONFIG, 'config.toml'))
+CFG_PATH = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'
+CONFIG = toml.load(os.path.join(CFG_PATH, 'config.toml'))
 
 # data path for cache
 DATA_PATH = os.getenv('CONF_PATH') or '/var/lib/powerBot/data'

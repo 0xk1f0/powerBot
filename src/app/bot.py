@@ -1,19 +1,18 @@
 import os
 import discord
 import toml
-import uuid
 import re
 from aiohttp import ClientSession, TCPConnector
 from discord.ext import commands, tasks
 from discord import app_commands
-from app.spotify import perform_archive, is_valid_url
-from app.reddit import perform_fetch, save_units, check_sub, TIMESPANS
-from app.wfp import get_wfps, SFW_CATEGORIES, NSFW_CATEGORIES, TYPES
 from datetime import datetime
+from app.integrations.reddit import perform_fetch, save_units, check_sub, TIMESPANS
+from app.integrations.wfp import get_wfps, SFW_CATEGORIES, NSFW_CATEGORIES, TYPES
+from app.integrations.macvendor import get_mac_vendor, checkMAC
 
 # Load the config.toml file with blocklist
-CONFIG = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'
-CONFIG = toml.load(os.path.join(CONFIG, 'config.toml'))
+CFG_PATH = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'
+CONFIG = toml.load(os.path.join(CFG_PATH, 'config.toml'))
 BLOCKLIST = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'
 BLOCKLIST = toml.load(os.path.join(BLOCKLIST, 'blocklist.toml'))
 VERSION = toml.load("VERSION")
@@ -31,9 +30,6 @@ BLOCKED_USERS = BLOCKLIST["blocked"]["users"]
 
 # Extract general stuff from the config file
 ADMINS = CONFIG["general"]["admins"]
-REDDIT_TOP_USAGE = CONFIG["general"]["reddit_top_usage"]
-SPOTIFY_ARCHIVE_USAGE = CONFIG["general"]["spotify_archive_usage"]
-WFP_USAGE = CONFIG["general"]["wfp_usage"]
 TRIGGERLIST = CONFIG["triggers"]["list"]
 REDDIT_CAP = CONFIG["reddit"]["fetch_cap"]
 ERR = CONFIG["general"]["err"]
@@ -106,39 +102,16 @@ async def daily_ticker():
 @bot.event
 async def on_message(message):
 	for word in TRIGGERLIST:
-		if str(message.content).lower() == word[0] and message.author != bot.user:
+		if word[0] in str(message.content).lower() and message.author != bot.user:
 			await message.channel.send(word[1])
 			return
 	await bot.process_commands(message)
 
 ### MAIN ###
 
-@bot.tree.command(name="archive", description=SPOTIFY_ARCHIVE_USAGE)
-@app_commands.describe(url = "URL of playlist to archive")
-@app_commands.describe(format = "One of: 'json', 'txt'")
-@app_commands.describe(reference = "Included in the output file")
-async def archive(ctx: discord.Interaction, url: str, format: str, reference: str):
-    if ctx.user.id in BLOCKED_USERS:
-        await ctx.response.send_message(f'You are currently on the blocklist!')
-        return
-    if is_valid_url(url) != True:
-        await ctx.response.send_message(f'"{url}" does not seem to be a valid URL!')
-    elif format not in ["json", "txt"]:
-        await ctx.response.send_message(f'"{format}" is unknown or unsupported!')
-    else:
-        id = url.split("/")[-1]
-        await ctx.response.send_message(f"Archiving that for you..")
-        result = await perform_archive(id, format, reference)
-        if result != False:
-            with open(os.path.join(DATA_PATH, f"playlist.{format}"), 'rb') as f:
-                playlist_file = discord.File(f, filename=f"playlist_{reference}_{uuid.uuid4()}.{format}")
-                await ctx.channel.send(f"Archived for you as .{format}! ^w^", file=playlist_file)
-        else:
-            await ctx.channel.send(f"{ERR}")
-
-@bot.tree.command(name="top", description=REDDIT_TOP_USAGE)
+@bot.tree.command(name="top", description=CONFIG["general"]["reddit_top_usage"])
 @app_commands.describe(subreddit = "Target Subreddit")
-@app_commands.describe(timespan = "Timespan of Posts")
+@app_commands.describe(timespan = f"Timespan: {TIMESPANS}")
 @app_commands.describe(count = "Image Count")
 async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: int):
     if ctx.user.id in BLOCKED_USERS:
@@ -171,9 +144,9 @@ async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: in
             else:
                 await ctx.channel.send(f"{ERR}")
 
-@bot.tree.command(name="wfp", description=WFP_USAGE)
-@app_commands.describe(type = "SFW or NSFW")
-@app_commands.describe(category = "Image Category")
+@bot.tree.command(name="wfp", description=CONFIG["general"]["wfp_usage"])
+@app_commands.describe(type = f"Type: {TYPES}")
+@app_commands.describe(category = f"Image Category: {SFW_CATEGORIES + NSFW_CATEGORIES}")
 @app_commands.describe(count = "Image Count")
 async def wft(ctx: discord.Interaction, type: str, category: str, count: int):
     # check if user is blocked
@@ -194,7 +167,7 @@ async def wft(ctx: discord.Interaction, type: str, category: str, count: int):
     elif count > int(REDDIT_CAP):
         await ctx.response.send_message(f"Max Count is capped to {REDDIT_CAP}!")
     else:
-        await ctx.response.send_message(f"^^ Getting you {count} pics..")
+        await ctx.response.send_message(f"Getting you {count} {type} {category} pics..")
         result = await get_wfps(type, category, count, client_session)
         if result != False or None and len(result) != 0:
             for unit in result:
@@ -202,6 +175,25 @@ async def wft(ctx: discord.Interaction, type: str, category: str, count: int):
                     await ctx.channel.send(f"|| {unit[0]} ||")
                 else:
                     await ctx.channel.send(unit[0])
+        else:
+            await ctx.channel.send(f"{ERR}")
+
+@bot.tree.command(name="mac", description=CONFIG["general"]["mac_usage"])
+@app_commands.describe(mac = "A valid MAC Address")
+async def wft(ctx: discord.Interaction, mac: str):
+    # check if user is blocked
+    if ctx.user.id in BLOCKED_USERS:
+        await ctx.response.send_message(f'You are currently on the blocklist!')
+        return
+    # check validity else proceed
+    if not checkMAC(mac):
+        await ctx.response.send_message(f"That MAC just doesn't look right..")
+        return
+    else:
+        await ctx.response.send_message(f"Checking that MAC for you..")
+        result = await get_mac_vendor(mac, client_session)
+        if result != False or None:
+            await ctx.channel.send(f"MAC belongs to: {result}")
         else:
             await ctx.channel.send(f"{ERR}")
 

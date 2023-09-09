@@ -6,8 +6,8 @@ A do-it-all discord bot written in spaghetti python
 
 - Basic Moderation Functions like user restricting and message deletion
 - Reddit fetching and Daily Posts to a specified channel via API
-- Spotify Playlist Archiving via API
 - waifu.pics fetching via API
+- macvendors.com MAC-Address checking via API
 
 ## Usage
 
@@ -63,9 +63,6 @@ You could also implement other downscalers, although that could require some cod
 ### Obtaining the API Keys
 
 Discord and Reddit are straightforward, just google.
-
-Same goes for Spotify although I advice to run the bot from a PC with a browser the first time as Spotify will ask you to login the first time.
-A `.cache` file will be generated after that and you won't need the browser anymore as long as it is present (will auto renew).
 
 ## License
 

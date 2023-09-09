@@ -1,10 +1,4 @@
 import aiohttp
-import toml
-from os import getenv, path
-
-# Load the config.toml file
-CONFIG = getenv('CONF_PATH') or '/var/lib/powerBot/config'
-CONFIG = toml.load(path.join(CONFIG, 'config.toml'))
 
 # wfp specific things
 TYPES = [ "sfw", "nsfw" ]
@@ -15,7 +9,6 @@ SFW_CATEGORIES = [
     "nom","bite","glomp","slap","kill","kick","happy","wink","poke","dance","cringe"
 ]
 
-# perform the fetch on the sub
 async def get_wfps(type: str, category: int, count: int, session: aiohttp.ClientSession):
     units = []
     for i in range(0, count):
