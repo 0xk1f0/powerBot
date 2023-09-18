@@ -6,9 +6,9 @@ from aiohttp import ClientSession, TCPConnector
 from discord.ext import commands, tasks
 from discord import app_commands
 from datetime import datetime
-from app.integrations.reddit import perform_fetch, save_units, check_sub, TIMESPANS
-from app.integrations.wfp import get_wfps, SFW_CATEGORIES, NSFW_CATEGORIES, TYPES
-from app.integrations.macvendor import get_mac_vendor, checkMAC
+from powerbot.src.integrations.reddit import perform_fetch, save_units, check_sub, TIMESPANS
+from powerbot.src.integrations.wfp import get_wfps, SFW_CATEGORIES, NSFW_CATEGORIES, TYPES
+from powerbot.src.integrations.macvendor import get_mac_vendor, checkMAC
 
 # Load the config.toml file with blocklist
 CFG_PATH = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'

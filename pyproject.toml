@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "powerbot"
+version = "1.4.2"
+description = "A do-it-all discord bot written in spaghetti python"
+authors = ["0xk1f0"]
+license = "GPL-3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+"discord.py" = "^2.3.2"
+toml = "^0.10.2"
+
+[tool.poetry.scripts]
+dev = "powerbot.runbot:main"
+dist = "powerbot.runbot:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
