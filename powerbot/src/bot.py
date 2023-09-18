@@ -20,21 +20,11 @@ VERSION = toml.load("VERSION")
 # data path for cache
 DATA_PATH = os.getenv('CONF_PATH') or '/var/lib/powerBot/data'
 
-# Extract discord parameters from the config file
-DAILY_ID = CONFIG["discord"]["daily_channel"]
-DAILY_COUNT = int(CONFIG["discord"]["daily_count"])
-DAILY_SUB = CONFIG["discord"]["daily_sub"]
-
 # Extract blocking stuff
 BLOCKED_USERS = BLOCKLIST["blocked"]["users"]
 
-# Extract general stuff from the config file
+# Extract admins
 ADMINS = CONFIG["general"]["admins"]
-TRIGGERLIST = CONFIG["triggers"]["list"]
-REDDIT_CAP = CONFIG["reddit"]["fetch_cap"]
-ERR = CONFIG["general"]["err"]
-STATUS = CONFIG["general"]["status"]
-TAG = VERSION["tag"]
 
 # bot intents
 intents = discord.Intents.default()
@@ -47,7 +37,8 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 # client session
 client_session = None
 
-# on bot ready
+### ON READY ###
+
 @bot.event
 async def on_ready():
     # sync
@@ -56,7 +47,7 @@ async def on_ready():
     except Exception as e:
         print(e)
     # set presence
-    await bot.change_presence(activity=discord.Game(STATUS))
+    await bot.change_presence(activity=discord.Game(CONFIG["general"]["status"]))
     # new aiohttp session
     global client_session
     client_session = ClientSession(
@@ -69,21 +60,32 @@ async def on_ready():
 
 ### TASKS ###
 
+# reload the config every minute
+@tasks.loop(seconds=60)
+async def config_ticker():
+    global CONFIG
+    global ADMINS
+    global BLOCKED_USERS
+    CONFIG = toml.load(os.path.join(CFG_PATH, 'config.toml'))
+    BLOCKED_USERS = BLOCKLIST["blocked"]["users"]
+    ADMINS = CONFIG["general"]["admins"]
+
+# this is for the daily action to take place
 @tasks.loop(seconds=60)
 async def daily_ticker():
     now = datetime.now()
     if now.hour == 12 and now.minute == 1:
         await bot.wait_until_ready()
-        channel = await bot.fetch_channel(DAILY_ID)
+        channel = await bot.fetch_channel(CONFIG["discord"]["daily_channel"])
         result = await perform_fetch(
-            DAILY_SUB,
-            DAILY_COUNT,
+            CONFIG["discord"]["daily_sub"],
+            int(CONFIG["discord"]["daily_count"]),
             "day",
             (".jpg",".jpeg",".png"),
             client_session
         )
         if result != False and len(result) != 0:
-            await channel.send(f"Time for r/{DAILY_SUB} Daily Top {DAILY_COUNT}!")
+            await channel.send(f"Time for r/{CONFIG['discord']['daily_sub']} Daily Top {int(CONFIG['discord']['daily_count'])}!")
             for image in result:
                 # ALWAYS SEND DAILY WITH SPOILER
                 final = await save_units(image[0], True, client_session)
@@ -95,13 +97,13 @@ async def daily_ticker():
                 else:
                     continue
         else:
-            await channel.send(f"{ERR}")
+            await channel.send(f"{CONFIG['general']['err']}")
 
 ### EVENTS ###
 
 @bot.event
 async def on_message(message):
-	for word in TRIGGERLIST:
+	for word in CONFIG["triggers"]["list"]:
 		if word[0] in str(message.content).lower() and message.author != bot.user:
 			await message.channel.send(word[1])
 			return
@@ -119,8 +121,8 @@ async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: in
         return
     if timespan not in TIMESPANS:
         await ctx.response.send_message(f"Invalid Timespan, try one of: {TIMESPANS}")
-    elif count > int(REDDIT_CAP):
-        await ctx.response.send_message(f"Max Count is capped to {REDDIT_CAP}!")
+    elif count > int(CONFIG["reddit"]["fetch_cap"]):
+        await ctx.response.send_message(f"Max Count is capped to {CONFIG['reddit']['fetch_cap']}!")
     else:
         is_sub = await check_sub(subreddit, client_session)
         if is_sub == False:
@@ -142,7 +144,7 @@ async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: in
                     else:
                         await ctx.channel.send(unit[0])
             else:
-                await ctx.followup.send(f"{ERR}")
+                await ctx.followup.send(f"{CONFIG['general']['err']}")
 
 @bot.tree.command(name="wfp", description=CONFIG["general"]["wfp_usage"])
 @app_commands.describe(type = f"Type: {TYPES}")
@@ -164,8 +166,8 @@ async def wft(ctx: discord.Interaction, type: str, category: str, count: int):
         CHOOSEN_CATS = NSFW_CATEGORIES
     if category not in CHOOSEN_CATS:
         await ctx.response.send_message(f"Invalid Type, try one of: {CHOOSEN_CATS}!")
-    elif count > int(REDDIT_CAP):
-        await ctx.response.send_message(f"Max Count is capped to {REDDIT_CAP}!")
+    elif count > int(CONFIG["reddit"]["fetch_cap"]):
+        await ctx.response.send_message(f"Max Count is capped to {CONFIG['reddit']['fetch_cap']}!")
     else:
         await ctx.response.defer()
         result = await get_wfps(type, category, count, client_session)
@@ -177,7 +179,7 @@ async def wft(ctx: discord.Interaction, type: str, category: str, count: int):
                 else:
                     await ctx.channel.send(unit[0])
         else:
-            await ctx.followup.send(f"{ERR}")
+            await ctx.followup.send(f"{CONFIG['general']['err']}")
 
 @bot.tree.command(name="mac", description=CONFIG["general"]["mac_usage"])
 @app_commands.describe(mac = "A valid MAC Address")
@@ -196,7 +198,7 @@ async def wft(ctx: discord.Interaction, mac: str):
         if result != False or None:
             await ctx.followup.send(f"MAC belongs to: {result}")
         else:
-            await ctx.followup.send(f"{ERR}")
+            await ctx.followup.send(f"{CONFIG['general']['err']}")
 
 ### MODERATION ###
 
@@ -224,7 +226,7 @@ async def purge_reply(ctx: discord.Interaction, message_id: str, count: int):
         else:
             await ctx.response.send_message('No Messages to delete!')
     except:
-        await ctx.followup.send(f"{ERR}")
+        await ctx.followup.send(f"{CONFIG['general']['err']}")
     finally:
         await ctx.followup.send(f'Deleted {len(HISTORY)} message/s!')
 
@@ -282,4 +284,4 @@ async def unblock(ctx: discord.Interaction, user: str):
 
 @bot.tree.command(name="version", description="Print Current Version")
 async def version(ctx):
-    await ctx.response.send_message(f'```Current Version: "{TAG}"```')
+    await ctx.response.send_message(f'```Current Version: "{VERSION["tag"]}"```')

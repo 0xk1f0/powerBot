@@ -10,26 +10,22 @@ from base64 import b64encode
 CFG_PATH = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'
 CONFIG = toml.load(os.path.join(CFG_PATH, 'config.toml'))
 
+# request headers
+AUTH_STRING = f'{CONFIG["reddit"]["client_id"]}:{CONFIG["reddit"]["client_secret"]}'
+HEADERS = {
+    # i think it goes like this, reddit has terrible API docs
+    'Authorization': f'Basic {b64encode(AUTH_STRING.encode())}',
+    'User-Agent': CONFIG["reddit"]["user_agent"]
+}
+
 # data path for cache
 DATA_PATH = os.getenv('CONF_PATH') or '/var/lib/powerBot/data'
 
 # binary path for downscaler
 DS_PATH = os.getenv('DS_PATH') or '/app/powerbot/bin/qds'
 
-# Extract the client ID and client secret and agent from the config file
-ID = CONFIG["reddit"]["client_id"]
-SECRET = CONFIG["reddit"]["client_secret"]
-AGENT = CONFIG["reddit"]["user_agent"]
-
 # fixed API timespan declarations
 TIMESPANS = ["all", "day", "hour", "month", "week", "year"]
-
-# request headers
-HEADERS = {
-    # i think it goes like this, reddit has terrible API docs
-    'Authorization': f'Basic {b64encode(b"{ID}:{SECRET}")}',
-    'User-Agent': AGENT
-}
 
 # check if sub even exists and if it's nsfw
 async def check_sub(sub: str, session: aiohttp.ClientSession):
