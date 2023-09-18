@@ -1,5 +1,7 @@
 # powerBot
 
+[![Docker](https://github.com/0xk1f0/powerBot/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/0xk1f0/powerBot/actions/workflows/docker-publish.yml)
+
 A do-it-all discord bot written in spaghetti python
 
 ### What is integrated up to now
