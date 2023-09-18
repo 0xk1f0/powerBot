@@ -9,11 +9,17 @@ on:
   push:
     branches: [ "master" ]
     paths:
-    - 'src/**'
+      - 'powerbot/**'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - 'Dockerfile'
   pull_request:
     branches: [ "master" ]
     paths:
-    - 'src/**'
+      - 'powerbot/**'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - 'Dockerfile'
 
 env:
   # Use docker.io for Docker Hub if empty
