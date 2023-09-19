@@ -6,23 +6,20 @@ from aiohttp import ClientSession, TCPConnector
 from discord.ext import commands, tasks
 from discord import app_commands
 from datetime import datetime
+from powerbot.src.helpers import access_check
 from powerbot.src.integrations.reddit import perform_fetch, save_units, check_sub, TIMESPANS
 from powerbot.src.integrations.wfp import get_wfps, SFW_CATEGORIES, NSFW_CATEGORIES, TYPES
-from powerbot.src.integrations.macvendor import get_mac_vendor, checkMAC
+from powerbot.src.integrations.macvendor import get_mac_vendor, check_MAC
 
-# Load the config.toml file with blocklist
+# Load the config.toml file
 CFG_PATH = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'
 CONFIG = toml.load(os.path.join(CFG_PATH, 'config.toml'))
-BLOCKLIST = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'
-BLOCKLIST = toml.load(os.path.join(BLOCKLIST, 'blocklist.toml'))
+# read the version
 VERSION = toml.load("VERSION")
-
 # data path for cache
 DATA_PATH = os.getenv('CONF_PATH') or '/var/lib/powerBot/data'
-
 # Extract blocking stuff
-BLOCKED_USERS = BLOCKLIST["blocked"]["users"]
-
+BLOCKED_USERS = CONFIG["general"]["blocked"]
 # Extract admins
 ADMINS = CONFIG["general"]["admins"]
 
@@ -30,10 +27,8 @@ ADMINS = CONFIG["general"]["admins"]
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-
 # Create a bot object
 bot = commands.Bot(command_prefix="/", intents=intents)
-
 # client session
 client_session = None
 
@@ -66,8 +61,9 @@ async def config_ticker():
     global CONFIG
     global ADMINS
     global BLOCKED_USERS
+    # re-read configs
     CONFIG = toml.load(os.path.join(CFG_PATH, 'config.toml'))
-    BLOCKED_USERS = BLOCKLIST["blocked"]["users"]
+    BLOCKED_USERS = CONFIG["general"]["blocked"]
     ADMINS = CONFIG["general"]["admins"]
 
 # this is for the daily action to take place
@@ -116,8 +112,9 @@ async def on_message(message):
 @app_commands.describe(timespan = f"Timespan: {TIMESPANS}")
 @app_commands.describe(count = "Image Count")
 async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: int):
-    if ctx.user.id in BLOCKED_USERS:
-        await ctx.response.send_message(f'You are currently on the blocklist!')
+    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, False)
+    if HAS_ACCESS != True:
+        await ctx.response.send_message(HAS_ACCESS)
         return
     if timespan not in TIMESPANS:
         await ctx.response.send_message(f"Invalid Timespan, try one of: {TIMESPANS}")
@@ -150,10 +147,10 @@ async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: in
 @app_commands.describe(type = f"Type: {TYPES}")
 @app_commands.describe(category = f"Image Category: {SFW_CATEGORIES + NSFW_CATEGORIES}")
 @app_commands.describe(count = "Image Count")
-async def wft(ctx: discord.Interaction, type: str, category: str, count: int):
-    # check if user is blocked
-    if ctx.user.id in BLOCKED_USERS:
-        await ctx.response.send_message(f'You are currently on the blocklist!')
+async def wfp(ctx: discord.Interaction, type: str, category: str, count: int):
+    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, False)
+    if HAS_ACCESS != True:
+        await ctx.response.send_message(HAS_ACCESS)
         return
     # check selected type
     if type not in TYPES:
@@ -183,13 +180,13 @@ async def wft(ctx: discord.Interaction, type: str, category: str, count: int):
 
 @bot.tree.command(name="mac", description=CONFIG["general"]["mac_usage"])
 @app_commands.describe(mac = "A valid MAC Address")
-async def wft(ctx: discord.Interaction, mac: str):
-    # check if user is blocked
-    if ctx.user.id in BLOCKED_USERS:
-        await ctx.response.send_message(f'You are currently on the blocklist!')
+async def mac(ctx: discord.Interaction, mac: str):
+    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, False)
+    if HAS_ACCESS != True:
+        await ctx.response.send_message(HAS_ACCESS)
         return
     # check validity else proceed
-    if not checkMAC(mac):
+    if not check_MAC(mac):
         await ctx.response.send_message(f"That MAC just doesn't look right..")
         return
     else:
@@ -206,13 +203,9 @@ async def wft(ctx: discord.Interaction, mac: str):
 @app_commands.describe(message_id = "ID of the Message above Start")
 @app_commands.describe(count = "Number of Messages to Purge")
 async def purge_reply(ctx: discord.Interaction, message_id: str, count: int):
-    # check if user is blocked
-    if ctx.user.id in BLOCKED_USERS:
-        await ctx.response.send_message(f'You are currently on the blocklist!')
-        return
-    # check if user is admin
-    if not ctx.user.id in ADMINS:
-        await ctx.response.send_message(f'You are not an admin!')
+    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, True)
+    if HAS_ACCESS != True:
+        await ctx.response.send_message(HAS_ACCESS)
         return
     try:
         # fetch message by ID
@@ -235,48 +228,52 @@ async def purge_reply(ctx: discord.Interaction, message_id: str, count: int):
 @bot.tree.command(name="block", description="Block a user")
 @app_commands.describe(user = "Target User")
 async def block(ctx: discord.Interaction, user: str):
-    global BLOCKLIST
+    global CONFIG
     global BLOCKED_USERS
 
-    # check if user is admin
-    if not ctx.user.id in ADMINS:
-        await ctx.response.send_message(f'You are not an admin!')
+    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, True)
+    if HAS_ACCESS != True:
+        await ctx.response.send_message(HAS_ACCESS)
+        return
     else:
         # convert to normal id
         user_id = int(re.search(r'\d+', user).group())
 
         # check if user is not blocked already -> block
-        if not user_id in BLOCKLIST["blocked"]["users"]:
-            BLOCKLIST["blocked"]["users"].append(user_id)
+        if not user_id in CONFIG["general"]["blocked"]:
+            CONFIG["general"]["blocked"].append(user_id)
         
         # write back to list
-        with open('./src/config/blocklist.toml', 'w') as f:
-            toml.dump(BLOCKLIST, f)
+        with open(os.path.join(CFG_PATH, 'config.toml'), 'w') as f:
+            toml.dump(CONFIG, f)
 
         # re-read config
-        BLOCKLIST = toml.load("./src/config/blocklist.toml")
-        BLOCKED_USERS = BLOCKLIST["blocked"]["users"]
+        CONFIG = toml.load(os.path.join(CFG_PATH, 'config.toml'))
+        BLOCKED_USERS = CONFIG["general"]["blocked"]
 
         await ctx.response.send_message(f'Added {user} to blocklist!')
 
 @bot.tree.command(name="unblock", description="Unblock a user")
 @app_commands.describe(user = "Target User")
 async def unblock(ctx: discord.Interaction, user: str):
-    global BLOCKLIST
+    global CONFIG
     global BLOCKED_USERS
-    if not ctx.user.id in ADMINS:
-        await ctx.response.send_message(f'You are not an admin!')
+
+    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, True)
+    if HAS_ACCESS != True:
+        await ctx.response.send_message(HAS_ACCESS)
+        return
     else:
         user_id = int(re.search(r'\d+', user).group())
 
-        if user_id in BLOCKLIST["blocked"]["users"]:
-            BLOCKLIST["blocked"]["users"].remove(user_id)
+        if user_id in CONFIG["general"]["blocked"]:
+            CONFIG["general"]["blocked"].remove(user_id)
 
-        with open('./src/config/blocklist.toml', 'w') as f:
-            toml.dump(BLOCKLIST, f)
+        with open(os.path.join(CFG_PATH, 'config.toml'), 'w') as f:
+            toml.dump(CONFIG, f)
 
-        BLOCKLIST = toml.load("./src/config/blocklist.toml")
-        BLOCKED_USERS = BLOCKLIST["blocked"]["users"]
+        CONFIG = toml.load(os.path.join(CFG_PATH, 'config.toml'))
+        BLOCKED_USERS = CONFIG["general"]["blocked"]
 
         await ctx.response.send_message(f'Removed {user} from blocklist!')
 

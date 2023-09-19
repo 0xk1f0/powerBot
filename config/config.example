@@ -7,6 +7,9 @@ status = ""
 admins = [
     1234,
 ]
+blocked = [
+    1234,
+]
 
 [discord]
 bot_token = ""

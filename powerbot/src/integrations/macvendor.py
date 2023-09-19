@@ -6,7 +6,7 @@ import re
 MAC_PATTERN = r'^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$'
 
 # check if a mac address is valid
-def checkMAC(input: str):
+def check_MAC(input: str):
     if re.search(MAC_PATTERN, input):
         return True
     else: return False
