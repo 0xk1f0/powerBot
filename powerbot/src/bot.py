@@ -10,6 +10,7 @@ from powerbot.src.helpers import access_check
 from powerbot.src.integrations.reddit import perform_fetch, save_units, check_sub, TIMESPANS
 from powerbot.src.integrations.wfp import get_wfps, SFW_CATEGORIES, NSFW_CATEGORIES, TYPES
 from powerbot.src.integrations.macvendor import get_mac_vendor, check_MAC
+from powerbot.src.integrations.conversion import sha_checksum, md5_checksum, base_encode, base_decode
 
 # Load the config.toml file
 CFG_PATH = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'
@@ -187,7 +188,7 @@ async def mac(ctx: discord.Interaction, mac: str):
         return
     # check validity else proceed
     if not check_MAC(mac):
-        await ctx.response.send_message(f"That MAC just doesn't look right..")
+        await ctx.response.send_message("That MAC just doesn't look right..")
         return
     else:
         await ctx.response.defer()
@@ -196,6 +197,76 @@ async def mac(ctx: discord.Interaction, mac: str):
             await ctx.followup.send(f"MAC belongs to: {result}")
         else:
             await ctx.followup.send(f"{CONFIG['general']['err']}")
+
+### CONVERSION ###
+
+@bot.tree.command(name="shasum", description="Calculate shasum")
+@app_commands.describe(input = "Input String")
+@app_commands.describe(algorithm = "Either 'sha128', 'sha256' or 'sha512'")
+async def mac(ctx: discord.Interaction, input: str, algorithm: str):
+    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, False)
+    if HAS_ACCESS != True:
+        await ctx.response.send_message(HAS_ACCESS)
+        return
+    if algorithm not in ('sha128', 'sha256', 'sha512'):
+        await ctx.response.send_message("Invalid Algorithm")
+    else:
+        await ctx.response.defer()
+        CHECKSUM = sha_checksum(input, algorithm)
+        if CHECKSUM == False:
+            await ctx.followup.send(f"{CONFIG['general']['err']}")
+        else:
+            await ctx.followup.send(f"```{CHECKSUM}```")
+
+@bot.tree.command(name="md5sum", description="Calculate md5sum")
+@app_commands.describe(input = "Input String")
+async def mac(ctx: discord.Interaction, input: str):
+    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, False)
+    if HAS_ACCESS != True:
+        await ctx.response.send_message(HAS_ACCESS)
+        return
+    await ctx.response.defer()
+    CHECKSUM = md5_checksum(input)
+    if CHECKSUM == False:
+        await ctx.followup.send(f"{CONFIG['general']['err']}")
+    else:
+        await ctx.followup.send(f"```{CHECKSUM}```")
+
+@bot.tree.command(name="baseenc", description="Encode baseX")
+@app_commands.describe(input = "Input String")
+@app_commands.describe(type = "Either 'base32' or 'base64'")
+async def mac(ctx: discord.Interaction, input: str, type: str):
+    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, False)
+    if HAS_ACCESS != True:
+        await ctx.response.send_message(HAS_ACCESS)
+        return
+    if type not in ('base32', 'base64'):
+        await ctx.response.send_message("Invalid Type")
+    else:
+        await ctx.response.defer()
+        CHECKSUM = base_encode(input, type)
+        if CHECKSUM == False:
+            await ctx.followup.send(f"{CONFIG['general']['err']}")
+        else:
+            await ctx.followup.send(f"```{CHECKSUM}```")
+
+@bot.tree.command(name="basedec", description="Decode baseX")
+@app_commands.describe(input = "Input String")
+@app_commands.describe(type = "Either 'base32' or 'base64'")
+async def mac(ctx: discord.Interaction, input: str, type: str):
+    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, False)
+    if HAS_ACCESS != True:
+        await ctx.response.send_message(HAS_ACCESS)
+        return
+    if type not in ('base32', 'base64'):
+        await ctx.response.send_message("Invalid Type")
+    else:
+        await ctx.response.defer()
+        CHECKSUM = base_decode(input, type)
+        if CHECKSUM == False:
+            await ctx.followup.send(f"{CONFIG['general']['err']}")
+        else:
+            await ctx.followup.send(f"```{CHECKSUM}```")
 
 ### MODERATION ###
 
