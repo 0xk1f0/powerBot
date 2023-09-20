@@ -4,10 +4,14 @@ import base64
 def sha_checksum(input: str, algorithm: str):
     try:
         match algorithm:
-            case 'sha128':
+            case 'sha1':
                 hasher = hashlib.sha1()
+            case 'sha224':
+                hasher = hashlib.sha224()
             case 'sha256':
                 hasher = hashlib.sha256()
+            case 'sha384':
+                hasher = hashlib.sha384()
             case 'sha512':
                 hasher = hashlib.sha512()
 

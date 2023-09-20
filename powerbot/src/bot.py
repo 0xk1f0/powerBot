@@ -202,13 +202,13 @@ async def mac(ctx: discord.Interaction, mac: str):
 
 @bot.tree.command(name="shasum", description="Calculate shasum")
 @app_commands.describe(input = "Input String")
-@app_commands.describe(algorithm = "Either 'sha128', 'sha256' or 'sha512'")
+@app_commands.describe(algorithm = "Either 'sha1sum', 'sha224', 'sha256', 'sha384' or 'sha512'")
 async def mac(ctx: discord.Interaction, input: str, algorithm: str):
     HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, False)
     if HAS_ACCESS != True:
         await ctx.response.send_message(HAS_ACCESS)
         return
-    if algorithm not in ('sha128', 'sha256', 'sha512'):
+    if algorithm not in ('sha1sum', 'sha224', 'sha256', 'sha384', 'sha512'):
         await ctx.response.send_message("Invalid Algorithm")
     else:
         await ctx.response.defer()
