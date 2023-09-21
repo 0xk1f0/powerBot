@@ -7,32 +7,33 @@ from discord import File as dF
 from base64 import b64encode
 
 # Load the config.toml file
-CFG_PATH = os.getenv('CONF_PATH') or '/var/lib/powerBot/config'
-CONFIG = toml.load(os.path.join(CFG_PATH, 'config.toml'))
+CFG_PATH = os.getenv("CONF_PATH") or "/var/lib/powerBot/config"
+CONFIG = toml.load(os.path.join(CFG_PATH, "config.toml"))
 
 # request headers
 AUTH_STRING = f'{CONFIG["reddit"]["client_id"]}:{CONFIG["reddit"]["client_secret"]}'
 HEADERS = {
     # i think it goes like this, reddit has terrible API docs
-    'Authorization': f'Basic {b64encode(AUTH_STRING.encode())}',
-    'User-Agent': CONFIG["reddit"]["user_agent"]
+    "Authorization": f"Basic {b64encode(AUTH_STRING.encode())}",
+    "User-Agent": CONFIG["reddit"]["user_agent"],
 }
 
 # data path for cache
-DATA_PATH = os.getenv('CONF_PATH') or '/var/lib/powerBot/data'
+DATA_PATH = os.getenv("CONF_PATH") or "/var/lib/powerBot/data"
 
 # binary path for downscaler
-DS_PATH = os.getenv('DS_PATH') or '/app/powerbot/bin/qds'
+DS_PATH = os.getenv("DS_PATH") or "/app/powerbot/bin/qds"
 
 # fixed API timespan declarations
 TIMESPANS = ["all", "day", "hour", "month", "week", "year"]
 
 # check if sub even exists and if it's nsfw
+
+
 async def check_sub(sub: str, session: aiohttp.ClientSession):
     try:
         async with session.get(
-            f'https://www.reddit.com/r/{sub}/about.json',
-            headers=HEADERS
+            f"https://www.reddit.com/r/{sub}/about.json", headers=HEADERS
         ) as response:
             if response.status == 200:
                 return True
@@ -41,31 +42,39 @@ async def check_sub(sub: str, session: aiohttp.ClientSession):
     except:
         return False
 
+
 # perform the fetch on the sub
-async def perform_fetch(sub: str, count: int, time: str, formats: tuple, session: aiohttp.ClientSession):
+
+
+async def perform_fetch(
+    sub: str, count: int, time: str, formats: tuple, session: aiohttp.ClientSession
+):
     units = []
     try:
         async with session.get(
-            f'https://www.reddit.com/r/{sub}/top.json?limit=50&t={time}',
-            headers=HEADERS
+            f"https://www.reddit.com/r/{sub}/top.json?limit=50&t={time}",
+            headers=HEADERS,
         ) as response:
             data = await response.json()
     except:
         return False
-    for post in data['data']['children']:
-        SPOILER_TAG = post['data']['over_18']
-        URL = post['data']['url']
-        if URL.endswith(formats) and len(units) < count: 
+    for post in data["data"]["children"]:
+        SPOILER_TAG = post["data"]["over_18"]
+        URL = post["data"]["url"]
+        if URL.endswith(formats) and len(units) < count:
             units.append([URL, SPOILER_TAG])
     return units
 
+
 # prepare image for the bot
+
+
 async def save_units(img: str, needs_spoiler: bool, session: aiohttp.ClientSession):
     try:
         # get file ending
         file_ext = img.split(".")[-1]
         # fetch the image
-        async with session.get(img,headers=HEADERS) as response:
+        async with session.get(img, headers=HEADERS) as response:
             data = await response.read()
         # get path with uuid
         IMG_UUID = uuid.uuid4()
@@ -74,11 +83,11 @@ async def save_units(img: str, needs_spoiler: bool, session: aiohttp.ClientSessi
         with open(IMG_PATH, "wb") as f:
             f.write(data)
         # downscale with qds
-        subprocess.run([
-            DS_PATH,
-            "--image",
-            IMG_PATH
-            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(
+            [DS_PATH, "--image", IMG_PATH],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         # get path
         FILE_PATH = os.path.join(DATA_PATH, f"qds_procd_{IMG_UUID}.{file_ext}")
         # open the file and return it as discord file to send

@@ -6,12 +6,14 @@ from powerbot.src.bot import bot
 
 # Load the config.toml and version file
 VERSION = toml.load("VERSION")
-CONFIG = getenv('CONF_PATH') or '/var/lib/powerBot/config'
-CONFIG = toml.load(path.join(CONFIG, 'config.toml'))
+CONFIG = getenv("CONF_PATH") or "/var/lib/powerBot/config"
+CONFIG = toml.load(path.join(CONFIG, "config.toml"))
+
 
 def main():
     # Print hello message
-    print(f"""
+    print(
+        f"""
     Starting Version {VERSION["tag"]}..
 
                                 ____        _   
@@ -22,9 +24,11 @@ def main():
     |_|
 
     ~ by 0xk1f0
-    """)
+    """
+    )
     # Run this sht
-    bot.run(CONFIG["discord"]["bot_token"])  
+    bot.run(CONFIG["discord"]["bot_token"])
+
 
 if __name__ == "__main__":
     main()
