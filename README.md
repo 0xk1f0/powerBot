@@ -1,12 +1,14 @@
 # powerBot
 
-[![Docker](https://github.com/0xk1f0/powerBot/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/0xk1f0/powerBot/actions/workflows/docker-publish.yml)
+[![Test, Build and Publish](https://github.com/0xk1f0/powerBot/actions/workflows/test_build_publish.yml/badge.svg)](https://github.com/0xk1f0/powerBot/actions/workflows/test_build_publish.yml)
 
 A do-it-all discord bot written in spaghetti python
 
 ### What is integrated up to now
 
 - Basic Moderation Functions like user restricting and message deletion
+- Base32/64 Encode and Decode
+- MD5/SHA Checksum
 - Reddit fetching and Daily Posts to a specified channel via API
 - waifu.pics fetching via API
 - macvendors.com MAC-Address checking via API
