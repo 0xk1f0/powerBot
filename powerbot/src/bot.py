@@ -27,17 +27,12 @@ from powerbot.src.integrations.conversion import (
     base_decode,
 )
 
-# Load the config.toml file
+# Set config path
 CFG_PATH = os.getenv("CONF_PATH") or "/var/lib/powerBot/config"
-CONFIG = toml.load(os.path.join(CFG_PATH, "config.toml"))
-# read the version
+# Read the version
 VERSION = toml.load("VERSION")
-# data path for cache
+# Data path for cache
 DATA_PATH = os.getenv("CONF_PATH") or "/var/lib/powerBot/data"
-# Extract blocking stuff
-BLOCKED_USERS = CONFIG["general"]["blocked"]
-# Extract admins
-ADMINS = CONFIG["general"]["admins"]
 
 # bot intents
 intents = discord.Intents.default()
@@ -48,18 +43,21 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 # client session
 client_session = None
 
+
 ### ON READY ###
 
 
+# initialize bot
 @bot.event
 async def on_ready():
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
     # sync
     try:
         await bot.tree.sync()
     except Exception as e:
         print(e)
     # set presence
-    await bot.change_presence(activity=discord.Game(CONFIG["general"]["status"]))
+    await bot.change_presence(activity=discord.Game(CFG["general"]["status"]))
     # new aiohttp session
     global client_session
     client_session = ClientSession(connector=TCPConnector(limit=20))
@@ -69,39 +67,25 @@ async def on_ready():
 
 ### TASKS ###
 
-# reload the config every minute
-
-
-@tasks.loop(seconds=60)
-async def config_ticker():
-    global CONFIG
-    global ADMINS
-    global BLOCKED_USERS
-    # re-read configs
-    CONFIG = toml.load(os.path.join(CFG_PATH, "config.toml"))
-    BLOCKED_USERS = CONFIG["general"]["blocked"]
-    ADMINS = CONFIG["general"]["admins"]
-
 
 # this is for the daily action to take place
-
-
 @tasks.loop(seconds=60)
 async def daily_ticker():
-    now = datetime.now()
-    if now.hour == 12 and now.minute == 1:
+    NOW = datetime.now()
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    if NOW.hour == 12 and NOW.minute == 1:
         await bot.wait_until_ready()
-        channel = await bot.fetch_channel(CONFIG["discord"]["daily_channel"])
+        channel = await bot.fetch_channel(CFG["discord"]["daily_channel"])
         result = await perform_fetch(
-            CONFIG["discord"]["daily_sub"],
-            int(CONFIG["discord"]["daily_count"]),
+            CFG["discord"]["daily_sub"],
+            int(CFG["discord"]["daily_count"]),
             "day",
             (".jpg", ".jpeg", ".png"),
             client_session,
         )
         if result != False and len(result) != 0:
             await channel.send(
-                f"Time for r/{CONFIG['discord']['daily_sub']} Daily Top {int(CONFIG['discord']['daily_count'])}!"
+                f"Time for r/{CFG['discord']['daily_sub']} Daily Top {int(CFG['discord']['daily_count'])}!"
             )
             for image in result:
                 # ALWAYS SEND DAILY WITH SPOILER
@@ -114,7 +98,7 @@ async def daily_ticker():
                 else:
                     continue
         else:
-            await channel.send(f"{CONFIG['general']['err']}")
+            await channel.send(f"{CFG['general']['err']}")
 
 
 ### EVENTS ###
@@ -122,9 +106,14 @@ async def daily_ticker():
 
 @bot.event
 async def on_message(message):
-    for word in CONFIG["triggers"]["list"]:
-        if word[0] in str(message.content).lower() and message.author != bot.user:
-            await message.channel.send(word[1])
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    DICT = CFG["triggers"]
+    for trigger, response in DICT.items():
+        if (
+            trigger in str(message.content).lower().split()
+            and message.author != bot.user
+        ):
+            await message.channel.send(response)
             return
     await bot.process_commands(message)
 
@@ -132,20 +121,23 @@ async def on_message(message):
 ### MAIN ###
 
 
-@bot.tree.command(name="top", description=CONFIG["general"]["reddit_top_usage"])
+@bot.tree.command(name="top", description="/top <subreddit> <timespan> <count>")
 @app_commands.describe(subreddit="Target Subreddit")
 @app_commands.describe(timespan=f"Timespan: {TIMESPANS}")
 @app_commands.describe(count="Image Count")
 async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: int):
-    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, False)
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    HAS_ACCESS = access_check(
+        ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], False
+    )
     if HAS_ACCESS != True:
         await ctx.response.send_message(HAS_ACCESS)
         return
     if timespan not in TIMESPANS:
         await ctx.response.send_message(f"Invalid Timespan, try one of: {TIMESPANS}")
-    elif count > int(CONFIG["reddit"]["fetch_cap"]):
+    elif count > int(CFG["reddit"]["fetch_cap"]):
         await ctx.response.send_message(
-            f"Max Count is capped to {CONFIG['reddit']['fetch_cap']}!"
+            f"Max Count is capped to {CFG['reddit']['fetch_cap']}!"
         )
     else:
         is_sub = await check_sub(subreddit, client_session)
@@ -170,15 +162,18 @@ async def top(ctx: discord.Interaction, subreddit: str, timespan: str, count: in
                     else:
                         await ctx.channel.send(unit[0])
             else:
-                await ctx.followup.send(f"{CONFIG['general']['err']}")
+                await ctx.followup.send(f"{CFG['general']['err']}")
 
 
-@bot.tree.command(name="wfp", description=CONFIG["general"]["wfp_usage"])
+@bot.tree.command(name="wfp", description="/wfp <type> <category> <count>")
 @app_commands.describe(type=f"Type: {TYPES}")
 @app_commands.describe(category=f"Image Category: {SFW_CATEGORIES + NSFW_CATEGORIES}")
 @app_commands.describe(count="Image Count")
 async def wfp(ctx: discord.Interaction, type: str, category: str, count: int):
-    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, False)
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    HAS_ACCESS = access_check(
+        ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], False
+    )
     if HAS_ACCESS != True:
         await ctx.response.send_message(HAS_ACCESS)
         return
@@ -193,9 +188,9 @@ async def wfp(ctx: discord.Interaction, type: str, category: str, count: int):
         CHOOSEN_CATS = NSFW_CATEGORIES
     if category not in CHOOSEN_CATS:
         await ctx.response.send_message(f"Invalid Type, try one of: {CHOOSEN_CATS}!")
-    elif count > int(CONFIG["reddit"]["fetch_cap"]):
+    elif count > int(CFG["reddit"]["fetch_cap"]):
         await ctx.response.send_message(
-            f"Max Count is capped to {CONFIG['reddit']['fetch_cap']}!"
+            f"Max Count is capped to {CFG['reddit']['fetch_cap']}!"
         )
     else:
         await ctx.response.defer()
@@ -208,13 +203,16 @@ async def wfp(ctx: discord.Interaction, type: str, category: str, count: int):
                 else:
                     await ctx.channel.send(unit[0])
         else:
-            await ctx.followup.send(f"{CONFIG['general']['err']}")
+            await ctx.followup.send(f"{CFG['general']['err']}")
 
 
-@bot.tree.command(name="mac", description=CONFIG["general"]["mac_usage"])
+@bot.tree.command(name="mac", description="/mac <address>")
 @app_commands.describe(mac="A valid MAC Address")
 async def mac(ctx: discord.Interaction, mac: str):
-    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, False)
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    HAS_ACCESS = access_check(
+        ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], False
+    )
     if HAS_ACCESS != True:
         await ctx.response.send_message(HAS_ACCESS)
         return
@@ -228,7 +226,7 @@ async def mac(ctx: discord.Interaction, mac: str):
         if result != False or None:
             await ctx.followup.send(f"MAC belongs to: {result}")
         else:
-            await ctx.followup.send(f"{CONFIG['general']['err']}")
+            await ctx.followup.send(f"{CFG['general']['err']}")
 
 
 ### CONVERSION ###
@@ -240,7 +238,10 @@ async def mac(ctx: discord.Interaction, mac: str):
     algorithm="Either 'sha1sum', 'sha224', 'sha256', 'sha384' or 'sha512'"
 )
 async def shasum(ctx: discord.Interaction, input: str, algorithm: str):
-    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, False)
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    HAS_ACCESS = access_check(
+        ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], False
+    )
     if HAS_ACCESS != True:
         await ctx.response.send_message(HAS_ACCESS)
         return
@@ -250,7 +251,7 @@ async def shasum(ctx: discord.Interaction, input: str, algorithm: str):
         await ctx.response.defer()
         CHECKSUM = sha_checksum(input, algorithm)
         if CHECKSUM == False:
-            await ctx.followup.send(f"{CONFIG['general']['err']}")
+            await ctx.followup.send(f"{CFG['general']['err']}")
         else:
             await ctx.followup.send(f"```{CHECKSUM}```")
 
@@ -258,14 +259,17 @@ async def shasum(ctx: discord.Interaction, input: str, algorithm: str):
 @bot.tree.command(name="md5sum", description="Calculate md5sum")
 @app_commands.describe(input="Input String")
 async def md5sum(ctx: discord.Interaction, input: str):
-    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, False)
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    HAS_ACCESS = access_check(
+        ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], False
+    )
     if HAS_ACCESS != True:
         await ctx.response.send_message(HAS_ACCESS)
         return
     await ctx.response.defer()
     CHECKSUM = md5_checksum(input)
     if CHECKSUM == False:
-        await ctx.followup.send(f"{CONFIG['general']['err']}")
+        await ctx.followup.send(f"{CFG['general']['err']}")
     else:
         await ctx.followup.send(f"```{CHECKSUM}```")
 
@@ -274,7 +278,10 @@ async def md5sum(ctx: discord.Interaction, input: str):
 @app_commands.describe(input="Input String")
 @app_commands.describe(type="Either 'base32' or 'base64'")
 async def baseenc(ctx: discord.Interaction, input: str, type: str):
-    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, False)
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    HAS_ACCESS = access_check(
+        ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], False
+    )
     if HAS_ACCESS != True:
         await ctx.response.send_message(HAS_ACCESS)
         return
@@ -284,7 +291,7 @@ async def baseenc(ctx: discord.Interaction, input: str, type: str):
         await ctx.response.defer()
         CHECKSUM = base_encode(input, type)
         if CHECKSUM == False:
-            await ctx.followup.send(f"{CONFIG['general']['err']}")
+            await ctx.followup.send(f"{CFG['general']['err']}")
         else:
             await ctx.followup.send(f"```{CHECKSUM}```")
 
@@ -293,7 +300,10 @@ async def baseenc(ctx: discord.Interaction, input: str, type: str):
 @app_commands.describe(input="Input String")
 @app_commands.describe(type="Either 'base32' or 'base64'")
 async def basedec(ctx: discord.Interaction, input: str, type: str):
-    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, False)
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    HAS_ACCESS = access_check(
+        ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], False
+    )
     if HAS_ACCESS != True:
         await ctx.response.send_message(HAS_ACCESS)
         return
@@ -303,7 +313,7 @@ async def basedec(ctx: discord.Interaction, input: str, type: str):
         await ctx.response.defer()
         CHECKSUM = base_decode(input, type)
         if CHECKSUM == False:
-            await ctx.followup.send(f"{CONFIG['general']['err']}")
+            await ctx.followup.send(f"{CFG['general']['err']}")
         else:
             await ctx.followup.send(f"```{CHECKSUM}```")
 
@@ -315,7 +325,10 @@ async def basedec(ctx: discord.Interaction, input: str, type: str):
 @app_commands.describe(message_id="ID of the Message above Start")
 @app_commands.describe(count="Number of Messages to Purge")
 async def purge_reply(ctx: discord.Interaction, message_id: str, count: int):
-    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, True)
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    HAS_ACCESS = access_check(
+        ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], True
+    )
     if HAS_ACCESS != True:
         await ctx.response.send_message(HAS_ACCESS)
         return
@@ -333,21 +346,18 @@ async def purge_reply(ctx: discord.Interaction, message_id: str, count: int):
         else:
             await ctx.response.send_message("No Messages to delete!")
     except:
-        await ctx.followup.send(f"{CONFIG['general']['err']}")
+        await ctx.followup.send(f"{CFG['general']['err']}")
     finally:
         await ctx.followup.send(f"Deleted {len(HISTORY)} message/s!")
-
-
-### BLOCKING ###
 
 
 @bot.tree.command(name="block", description="Block a user")
 @app_commands.describe(user="Target User")
 async def block(ctx: discord.Interaction, user: str):
-    global CONFIG
-    global BLOCKED_USERS
-
-    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, True)
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    HAS_ACCESS = access_check(
+        ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], True
+    )
     if HAS_ACCESS != True:
         await ctx.response.send_message(HAS_ACCESS)
         return
@@ -356,16 +366,12 @@ async def block(ctx: discord.Interaction, user: str):
         user_id = int(re.search(r"\d+", user).group())
 
         # check if user is not blocked already -> block
-        if not user_id in CONFIG["general"]["blocked"]:
-            CONFIG["general"]["blocked"].append(user_id)
+        if not user_id in CFG["general"]["blocked"]:
+            CFG["general"]["blocked"].append(user_id)
 
         # write back to list
         with open(os.path.join(CFG_PATH, "config.toml"), "w") as f:
-            toml.dump(CONFIG, f)
-
-        # re-read config
-        CONFIG = toml.load(os.path.join(CFG_PATH, "config.toml"))
-        BLOCKED_USERS = CONFIG["general"]["blocked"]
+            toml.dump(CFG, f)
 
         await ctx.response.send_message(f"Added {user} to blocklist!")
 
@@ -373,24 +379,21 @@ async def block(ctx: discord.Interaction, user: str):
 @bot.tree.command(name="unblock", description="Unblock a user")
 @app_commands.describe(user="Target User")
 async def unblock(ctx: discord.Interaction, user: str):
-    global CONFIG
-    global BLOCKED_USERS
-
-    HAS_ACCESS = access_check(ctx.user.id, ADMINS, BLOCKED_USERS, True)
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    HAS_ACCESS = access_check(
+        ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], True
+    )
     if HAS_ACCESS != True:
         await ctx.response.send_message(HAS_ACCESS)
         return
     else:
         user_id = int(re.search(r"\d+", user).group())
 
-        if user_id in CONFIG["general"]["blocked"]:
-            CONFIG["general"]["blocked"].remove(user_id)
+        if user_id in CFG["general"]["blocked"]:
+            CFG["general"]["blocked"].remove(user_id)
 
         with open(os.path.join(CFG_PATH, "config.toml"), "w") as f:
-            toml.dump(CONFIG, f)
-
-        CONFIG = toml.load(os.path.join(CFG_PATH, "config.toml"))
-        BLOCKED_USERS = CONFIG["general"]["blocked"]
+            toml.dump(CFG, f)
 
         await ctx.response.send_message(f"Removed {user} from blocklist!")
 
@@ -398,6 +401,61 @@ async def unblock(ctx: discord.Interaction, user: str):
 ### MISC ###
 
 
+@bot.tree.command(name="addtrigger", description="Add a new Triggerword")
+@app_commands.describe(trigger="Triggerword to add")
+@app_commands.describe(response="Trigger response")
+async def add_trigger(ctx: discord.Interaction, trigger: str, response: str):
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    HAS_ACCESS = access_check(
+        ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], True
+    )
+    if HAS_ACCESS != True:
+        await ctx.response.send_message(HAS_ACCESS)
+        return
+    else:
+        DICT = CFG["triggers"]
+        if not trigger in DICT:
+            DICT[trigger] = response
+            # write back to list
+            with open(os.path.join(CFG_PATH, "config.toml"), "w") as f:
+                toml.dump(CFG, f)
+
+            await ctx.response.send_message(f'Added "{trigger}" to Triggerwords!')
+        else:
+            await ctx.response.send_message(f'Trigger "{trigger}" already exists!')
+
+
+@bot.tree.command(name="removetrigger", description="Remove a Triggerword")
+@app_commands.describe(trigger="Triggerword to remove")
+async def remove_trigger(ctx: discord.Interaction, trigger: str):
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    HAS_ACCESS = access_check(
+        ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], True
+    )
+    if HAS_ACCESS != True:
+        await ctx.response.send_message(HAS_ACCESS)
+        return
+    else:
+        DICT = CFG["triggers"]
+        if trigger in DICT:
+            DICT.pop(trigger, None)
+            # write back to list
+            with open(os.path.join(CFG_PATH, "config.toml"), "w") as f:
+                toml.dump(CFG, f)
+
+            await ctx.response.send_message(f'Removed "{trigger}" from Triggerwords!')
+        else:
+            await ctx.response.send_message(f'Trigger "{trigger}" doesn\'t exists!')
+
+
 @bot.tree.command(name="version", description="Print Current Version")
 async def version(ctx):
-    await ctx.response.send_message(f'```Current Version: "{VERSION["tag"]}"```')
+    CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    HAS_ACCESS = access_check(
+        ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], True
+    )
+    if HAS_ACCESS != True:
+        await ctx.response.send_message(HAS_ACCESS)
+        return
+    else:
+        await ctx.response.send_message(f'```Current Version: "{VERSION["tag"]}"```')

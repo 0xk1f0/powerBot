@@ -1,7 +1,4 @@
 [general]
-reddit_top_usage = "/top <subreddit> <timespan> <count>"
-wfp_usage = "/wfp <type> <category> <count>"
-mac_usage = "/mac <address>"
 err = ""
 status = ""
 admins = [
@@ -24,6 +21,4 @@ user_agent = ""
 fetch_cap = ""
 
 [triggers]
-list = [
-    ["trigger-word","response"],
-]
+trigger = "response"
