@@ -107,13 +107,10 @@ async def daily_ticker():
 @bot.event
 async def on_message(message):
     CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
-    DICT = CFG["triggers"]
-    for trigger, response in DICT.items():
-        if (
-            trigger in str(message.content).lower().split()
-            and message.author != bot.user
-        ):
-            await message.channel.send(response)
+    LIST = CFG["triggers"]["list"]
+    for item in LIST:
+        if item[0] in str(message.content).lower() and message.author != bot.user:
+            await message.channel.send(item[1])
             return
     await bot.process_commands(message)
 
@@ -413,16 +410,17 @@ async def add_trigger(ctx: discord.Interaction, trigger: str, response: str):
         await ctx.response.send_message(HAS_ACCESS)
         return
     else:
-        DICT = CFG["triggers"]
-        if not trigger in DICT:
-            DICT[trigger] = response
-            # write back to list
-            with open(os.path.join(CFG_PATH, "config.toml"), "w") as f:
-                toml.dump(CFG, f)
+        for item in CFG["triggers"]["list"]:
+            if trigger == item[0]:
+                # word exists
+                await ctx.response.send_message(f'Trigger "{trigger}" already exists!')
+                return
+        CFG["triggers"]["list"].append([trigger, response])
+        # write back to list
+        with open(os.path.join(CFG_PATH, "config.toml"), "w") as f:
+            toml.dump(CFG, f)
 
-            await ctx.response.send_message(f'Added "{trigger}" to Triggerwords!')
-        else:
-            await ctx.response.send_message(f'Trigger "{trigger}" already exists!')
+        await ctx.response.send_message(f'Added "{trigger}" to Triggerwords!')
 
 
 @bot.tree.command(name="removetrigger", description="Remove a Triggerword")
@@ -436,23 +434,23 @@ async def remove_trigger(ctx: discord.Interaction, trigger: str):
         await ctx.response.send_message(HAS_ACCESS)
         return
     else:
-        DICT = CFG["triggers"]
-        if trigger in DICT:
-            DICT.pop(trigger, None)
-            # write back to list
-            with open(os.path.join(CFG_PATH, "config.toml"), "w") as f:
-                toml.dump(CFG, f)
-
-            await ctx.response.send_message(f'Removed "{trigger}" from Triggerwords!')
-        else:
-            await ctx.response.send_message(f'Trigger "{trigger}" doesn\'t exists!')
+        for item in CFG["triggers"]["list"]:
+            if trigger == item[0]:
+                CFG["triggers"]["list"].remove(item)
+                # write back to list
+                with open(os.path.join(CFG_PATH, "config.toml"), "w") as f:
+                    toml.dump(CFG, f)
+                await ctx.response.send_message(f'Removed "{trigger}" from Triggerwords!')
+                return
+        # word doesnt exist
+        await ctx.response.send_message(f'Trigger "{trigger}" doesn\'t exists!')
 
 
 @bot.tree.command(name="version", description="Print Current Version")
 async def version(ctx):
     CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
     HAS_ACCESS = access_check(
-        ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], True
+        ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], False
     )
     if HAS_ACCESS != True:
         await ctx.response.send_message(HAS_ACCESS)

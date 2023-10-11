@@ -21,4 +21,6 @@ user_agent = ""
 fetch_cap = ""
 
 [triggers]
-trigger = "response"
+list = [
+    ["trigger", "response"]
+]
