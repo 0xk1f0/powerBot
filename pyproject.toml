@@ -1,10 +1,13 @@
 [tool.poetry]
 name = "powerbot"
-version = "1.6.0"
+version = "1.6.1"
 description = "A do-it-all discord bot written in spaghetti python"
 authors = ["0xk1f0"]
 license = "GPL-3.0"
 readme = "README.md"
+
+[tool.version]
+codename = "mitsuha"
 
 [tool.poetry.dependencies]
 python = "^3.11"

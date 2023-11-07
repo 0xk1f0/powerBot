@@ -457,6 +457,7 @@ async def remove_trigger(ctx: discord.Interaction, trigger: str):
 @bot.tree.command(name="version", description="Print Current Version")
 async def version(ctx):
     CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
+    VER = toml.load(os.path.join("./", "pyproject.toml"))
     HAS_ACCESS = access_check(
         ctx.user.id, CFG["general"]["admins"], CFG["general"]["blocked"], False
     )
@@ -464,4 +465,6 @@ async def version(ctx):
         await ctx.response.send_message(HAS_ACCESS)
         return
     else:
-        await ctx.response.send_message(f'```Current Version: "{VERSION["tag"]}"```')
+        await ctx.response.send_message(
+            f'```Current Version: "{VER["tool"]["poetry"]["version"]} - {VER["tool"]["version"]["codename"]}"```'
+        )
