@@ -23,4 +23,4 @@ RUN poetry install
 COPY powerbot ./powerbot
 
 # Start bot
-CMD ["poetry", "run", "dist"]
+CMD ["poetry", "run", "main"]

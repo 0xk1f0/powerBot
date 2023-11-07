@@ -365,12 +365,15 @@ async def block(ctx: discord.Interaction, user: str):
         # check if user is not blocked already -> block
         if not user_id in CFG["general"]["blocked"]:
             CFG["general"]["blocked"].append(user_id)
+        else:
+            await ctx.response.send_message(f"<@{user_id}> already blocked!")
+            return
 
         # write back to list
         with open(os.path.join(CFG_PATH, "config.toml"), "w") as f:
             toml.dump(CFG, f)
 
-        await ctx.response.send_message(f"Added {user} to blocklist!")
+        await ctx.response.send_message(f"Added <@{user_id}> to blocklist!")
 
 
 @bot.tree.command(name="unblock", description="Unblock a user")
@@ -388,11 +391,14 @@ async def unblock(ctx: discord.Interaction, user: str):
 
         if user_id in CFG["general"]["blocked"]:
             CFG["general"]["blocked"].remove(user_id)
+        else:
+            await ctx.response.send_message(f"<@{user_id}> currently not blocked!")
+            return
 
         with open(os.path.join(CFG_PATH, "config.toml"), "w") as f:
             toml.dump(CFG, f)
 
-        await ctx.response.send_message(f"Removed {user} from blocklist!")
+        await ctx.response.send_message(f"Removed <@{user_id}> from blocklist!")
 
 
 ### MISC ###
@@ -440,7 +446,9 @@ async def remove_trigger(ctx: discord.Interaction, trigger: str):
                 # write back to list
                 with open(os.path.join(CFG_PATH, "config.toml"), "w") as f:
                     toml.dump(CFG, f)
-                await ctx.response.send_message(f'Removed "{trigger}" from Triggerwords!')
+                await ctx.response.send_message(
+                    f'Removed "{trigger}" from Triggerwords!'
+                )
                 return
         # word doesnt exist
         await ctx.response.send_message(f'Trigger "{trigger}" doesn\'t exists!')

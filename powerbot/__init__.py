@@ -28,7 +28,3 @@ def main():
     )
     # Run this sht
     bot.run(CONFIG["discord"]["bot_token"])
-
-
-if __name__ == "__main__":
-    main()
