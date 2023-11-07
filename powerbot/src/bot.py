@@ -29,8 +29,6 @@ from powerbot.src.integrations.conversion import (
 
 # Set config path
 CFG_PATH = os.getenv("CONF_PATH") or "/var/lib/powerBot/config"
-# Read the version
-VERSION = toml.load("VERSION")
 # Data path for cache
 DATA_PATH = os.getenv("CONF_PATH") or "/var/lib/powerBot/data"
 
