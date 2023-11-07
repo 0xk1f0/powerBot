@@ -14,7 +14,6 @@ RUN pip install poetry
 # Copy initial necessary files to container
 COPY pyproject.toml .
 COPY poetry.lock .
-COPY VERSION .
 
 # Install poetry deps
 RUN poetry install
