@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: powerBot-pod
+  name: powerBot-pod
+spec:
+  securityContext:
+    fsGroup: 1000
+    privileged: false
+    readOnlyRootFilesystem: false
+  containers:
+  - env:
+    - name: TZ
+      value: Europe/Vienna
+    image: ghcr.io/0xk1f0/powerbot:master
+    name: powerBot-bot
+    volumeMounts:
+    - mountPath: /var/lib/powerBot/config
+      name: config-0
+    - mountPath: /var/lib/powerBot/data
+      name: data-0
+  volumes:
+  - hostPath:
+      path: ./config
+      type: DirectoryOrCreate
+    name: config-0
+  - hostPath:
+      path: ./data
+      type: DirectoryOrCreate
+    name: data-0
