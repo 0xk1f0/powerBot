@@ -107,7 +107,10 @@ async def on_message(message):
     CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
     LIST = CFG["triggers"]["list"]
     for item in LIST:
-        if item[0] in str(message.content).lower() and message.author != bot.user:
+        if (
+            item[0] in str(message.content).lower().split()
+            and message.author != bot.user
+        ):
             await message.channel.send(item[1])
             return
     await bot.process_commands(message)
