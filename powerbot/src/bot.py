@@ -106,11 +106,17 @@ async def daily_ticker():
 async def on_message(message):
     CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
     LIST = CFG["triggers"]["list"]
+    MESSAGE = str(message.content).lower().split()
     for item in LIST:
-        if (
-            item[0] in str(message.content).lower().split()
-            and message.author != bot.user
-        ):
+        ALL_WORDS = str(item[0]).lower().split()
+        contains = False
+        for sub_word in ALL_WORDS:
+            if message.author != bot.user and sub_word in MESSAGE:
+                contains = True
+            else:
+                contains = False
+                break
+        if contains:
             await message.channel.send(item[1])
             return
     await bot.process_commands(message)

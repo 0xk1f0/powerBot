@@ -13,6 +13,12 @@ spec:
   - env:
     - name: TZ
       value: Europe/Vienna
+    - name: CONF_PATH # path to config files folder
+      value: /var/lib/powerBot/config
+    - name: DATA_PATH # path to data cache folder
+      value: /var/lib/powerBot/data
+    - name: DS_PATH # path to downscaler binary
+      value: /app/powerbot/bin/qds
     image: ghcr.io/0xk1f0/powerbot:master
     name: powerBot-bot
     volumeMounts:

@@ -6,8 +6,8 @@ services:
       - ./config:/var/lib/powerBot/config
       - ./data:/var/lib/powerBot/data
     environment:
-      # CONF_PATH: '/some/path/' # path to config files folder
-      # DATA_PATH: '/some/path/' # path to data cache folder
-      # DS_PATH: '/some/path/' # path to downscaler binary
+      CONF_PATH: '/var/lib/powerBot/config' # path to config files folder
+      DATA_PATH: '/var/lib/powerBot/data' # path to data cache folder
+      DS_PATH: '/app/powerbot/bin/qds' # path to downscaler binary
       TZ: 'Europe/Vienna'
     restart: unless-stopped
