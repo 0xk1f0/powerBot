@@ -1,3 +1,6 @@
+> [!NOTE]  
+> Project in Maintenance Mode. Only doing Security related Updates.
+
 # powerBot
 
 [![Test, Build and Publish](https://github.com/0xk1f0/powerBot/actions/workflows/test_build_publish.yml/badge.svg)](https://github.com/0xk1f0/powerBot/actions/workflows/test_build_publish.yml)
