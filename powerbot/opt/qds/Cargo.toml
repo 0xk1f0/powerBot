@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.1", features = ["derive"] }
-image = "0.24.8"
+image = "0.24.9"
 
 # makes image lib faster for dev
 [profile.dev-unopt]
