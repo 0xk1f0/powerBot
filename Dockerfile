@@ -21,8 +21,8 @@ RUN poetry install --no-root
 # Copy module
 COPY powerbot ./powerbot
 
-# Install root
-RUN poetry install --only-root
+# Finally install again
+RUN poetry install
 
 # Start bot
 CMD ["poetry", "run", "main"]
