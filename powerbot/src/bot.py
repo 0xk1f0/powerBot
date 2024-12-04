@@ -71,7 +71,7 @@ async def on_ready():
 async def daily_ticker():
     NOW = datetime.now()
     CFG = toml.load(os.path.join(CFG_PATH, "config.toml"))
-    if NOW.hour == 12 and NOW.minute == 1:
+    if NOW.hour == 12 and NOW.minute == 1 and len(CFG["discord"]["daily_sub"]) > 0:
         await bot.wait_until_ready()
         channel = await bot.fetch_channel(CFG["discord"]["daily_channel"])
         result = await perform_fetch(

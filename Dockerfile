@@ -15,11 +15,14 @@ RUN pip install poetry
 COPY pyproject.toml .
 COPY poetry.lock .
 
-# Install poetry deps
-RUN poetry install
+# Install Dependencies only
+RUN poetry install --no-root
 
 # Copy module
 COPY powerbot ./powerbot
+
+# Install root
+RUN poetry install --only-root
 
 # Start bot
 CMD ["poetry", "run", "main"]
