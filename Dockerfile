@@ -13,6 +13,7 @@ RUN pip install poetry
 
 # Copy initial necessary files to container
 COPY pyproject.toml .
+COPY README.md .
 
 # Install Dependencies only
 RUN poetry install --no-root
