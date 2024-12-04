@@ -13,7 +13,6 @@ RUN pip install poetry
 
 # Copy initial necessary files to container
 COPY pyproject.toml .
-COPY poetry.lock .
 
 # Install Dependencies only
 RUN poetry install --no-root
@@ -21,8 +20,8 @@ RUN poetry install --no-root
 # Copy module
 COPY powerbot ./powerbot
 
-# Finally install again
-RUN poetry install
+# Install root
+RUN poetry install --only-root
 
 # Start bot
 CMD ["poetry", "run", "main"]
